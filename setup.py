@@ -20,6 +20,6 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
-        "License :: Unlicense",
+        "License :: Public Domain",
     ],
 )
