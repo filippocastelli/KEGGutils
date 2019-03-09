@@ -11,7 +11,7 @@ class KeggUtilsGraphException(Exception):
         self.graph = graph
         if msg is None:
             # Set some default useful error message
-            msg = "There's a problem with graph: %s" % graph #TODO: replace %s with something
+            msg = "There's a problem with graph: {}".format(graph.name)
             
         super(KeggUtilsGraphException, self).__init__(msg)
 
