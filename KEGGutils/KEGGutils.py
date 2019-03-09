@@ -276,7 +276,8 @@ def descendant_graph(graph, nodelist, name = None):
     """Given a KEGG graph and a set of nodes returns graph of descendant nodes    
     Parameters:
         :kegg_graph (Graph): input graph, has to be generated via gen_graph()
-        :nodelist (list): list of nodes
+        :nodelist (list): list of nodes for the descendant graph
+        :name (str): optional, name of the graph
         
     Returns:
         :descendant_graph (Graph): graph of descendant nodes
@@ -303,11 +304,12 @@ def descendant_graph(graph, nodelist, name = None):
     return descendant_graph
 
 
-def projected_graph(graph, nodelist, multigraph = False):
-    """Calculates the prograph     
+def projected_graph(graph, nodelist, multigraph = False, name = None):
+    """Calculates the projected graph respect to a node list     
     Parameters:
         :kegg_graph (Graph): input graph, has to be generated via gen_graph()
         :nodelist (list): list of nodes
+        :multigraph (bool): if True 
         
     Returns:
         :descendant_graph (Graph): graph of descendant nodes
@@ -329,7 +331,10 @@ def projected_graph(graph, nodelist, multigraph = False):
         
         projected_graph.add_node(dis_node, nodetype = nodetype)
         
-        
+    if name == None:
+        name = "{}_projected".format(graph.name)
+    projected_graph.name = name
+    
     return projected_graph
     
 # =============================================================================
