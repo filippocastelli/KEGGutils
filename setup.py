@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name = "KEGGutils",
-    version = "0.0.1",
+    version = "0.1.0",
     author = "Filippo Castelli",
     author_email = "filippocastelli42@gmail.com",
     description = ("Simple utils to work with KEGG data on NetworkX"),
