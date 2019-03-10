@@ -194,12 +194,15 @@ def get_infos(item, verbose = False):
     print("Infos on {} from KEGG:\n".format(item))
     print(infos)
     
-def kegg_graph(source_db, target_db):
+def kegg_graph(source_db, target_db, force_download = False):
     """Returns a NetworkX Graph for a KEGG target-source database
     
     Parameters:
         :target_db (str): target category
         :source_db (str): source category
+        :force_download (bool): if set to True redownloads the graph from KEGG\
+        everytime, if set to False checks if the graph was previously downloaded\
+        and loads an offline copy
         
         both categories must be valid KEGG categories, see KEGG API Docs
         
@@ -404,6 +407,7 @@ def projected_graph(graph, nodelist, multigraph = False, name = None):
         :kegg_graph (Graph): input graph, has to be generated via gen_graph()
         :nodelist (list): list of nodes
         :multigraph (bool): if True 
+        :name (str): optional name of the graph
         
     Returns:
         :descendant_graph (Graph): graph of descendant nodes
@@ -453,7 +457,8 @@ def draw(graph,
          title = None,
          layout = None,
          filename = None,
-         return_ax = False):
+         return_ax = False,
+         ):
     """Graph drawing made a bit easier
     
     Parameters:
@@ -472,12 +477,18 @@ def draw(graph,
         """
     default_layout = 'spring_layout'
     if layout is None: layout = default_layout
+    
     graph_nodetypes = get_unique_nodetypes(graph)
+ 
+    nodetypes_dict = nx.get_node_attributes(graph, "nodetype")
     
     if len(graph_nodetypes) == 1:
         graph_nodetypes = graph_nodetypes*2
+        
+    graph_colors = replace_dict_value(nodetypes_dict, graph_nodetypes[0], "b")
+    graph_colors = replace_dict_value(graph_colors, graph_nodetypes[1], "r")
     
-    if title is None: title = "{} > {} graph".format(graph_nodetypes[0], graph_nodetypes[1])
+    if title is None: title = "{} > {} graph".format(graph_nodetypes[1], graph_nodetypes[0])
     
     layouts = {'circular_layout':         nx.circular_layout,
              'kamada_kawai_layout':     nx.kamada_kawai_layout,
@@ -494,7 +505,8 @@ def draw(graph,
     plt.figure()
     
     pos = layouts[layout](graph)
-    nx.draw_networkx_nodes(graph,pos,node_size=700)
+    
+    nx.draw_networkx_nodes(graph,pos, node_color = list(graph_colors.values()))
     nx.draw_networkx_edges(graph,pos)
     nx.draw_networkx_labels(graph,pos)
     
@@ -513,7 +525,23 @@ def draw(graph,
         
         return ax
         
+# =============================================================================
+# MISC
+# =============================================================================
         
+def replace_dict_value(dictionary, old_value, new_value):
+    """ Selectively replaces values in a dictionary
+    
+    Parameters:
+        :dictionary(dict): input dictionary
+        :old_value: value to be replaced
+        :new_value: value to replace
         
+    Returns:
+        :output_dictionary (dict): dictionary with replaced values"""
         
+    for key, value in dictionary.items():
+        if value == old_value:
+            dictionary[key] = new_value
+    return dictionary
 
