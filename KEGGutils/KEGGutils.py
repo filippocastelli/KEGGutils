@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pylab as plt
 import requests
 
+
 #%%
 # =============================================================================
 # ERRORS AND EXCEPTIONS
@@ -30,6 +31,16 @@ class NoDescendantError(KeggUtilsGraphException):
             msg = "Graph {} has no descendant graph".format(graph.name)
             
         super(NoDescendantError, self).__init__(graph, msg)
+        
+        
+class NoProjectedError(KeggUtilsGraphException):
+    def __init__(self, graph, msg = None):
+        self.graph = graph
+        
+        if msg is None:
+            msg = "Graph {} has no projected graph".format(graph.name)
+            
+        super(NoProjectedError, self).__init__(graph, msg)
 
 class KEGGOnlineError(Exception):
     def __init__(self, request, msg = None):
@@ -46,7 +57,7 @@ class KEGGOnlineError(Exception):
 # =============================================================================
 # DOWNLOADING FROM KEGG
 # =============================================================================
-def get_online_request(url):
+def get_online_request(url, finished_msg = False):
     """ Just an errored proxy for requests.get()"""
     
     request = requests.get(url)
@@ -54,9 +65,25 @@ def get_online_request(url):
     if request.ok == False:
         raise KEGGOnlineError(request)
         
-    print("done")
+    if finished_msg == True:
+        print("downloaded succesfully from {}".format(url))   
     return request
 
+def get_list(item):
+    """Returns KEGG list of codes """
+    
+    org_url = "http://rest.kegg.jp/list/{}".format(item)
+    
+    itemlist = []
+    print("Downloading KEGG {} list...".format(item))
+    list_fulltext = get_online_request(org_url, finished_msg = True).text
+    
+    for line in list_fulltext.splitlines():
+        entry, description = line.strip().split('\t')
+        itemlist.append(entry)
+        
+    return itemlist
+    
 def get_organism_codes():
     """Returns all KEGG Organism name codes """
     
@@ -64,7 +91,7 @@ def get_organism_codes():
     
     org_codes = []
     print("Downloading KEGG organism list...")
-    organism_fulltext = get_online_request(org_url).text
+    organism_fulltext = get_online_request(org_url, finished_msg = True).text
     
     for line in organism_fulltext.splitlines():
         T_identifier, kegg_code, description, hier= line.strip().split('\t')
@@ -154,7 +181,7 @@ def kegg_graph(source_db, target_db):
     
     url = kegg_url(target_db, source_db)
     print("Downloading database {} -> {}...".format(source_db, target_db))
-    text = get_online_request(url).text
+    text = get_online_request(url, finished_msg = True).text
     
     nodes1 = []
     nodes2 = []
@@ -303,6 +330,43 @@ def descendant_graph(graph, nodelist, name = None):
     
     return descendant_graph
 
+def neighbor_graph(graph, nodelist, name = None):
+    """Neighbor Subgraph
+    
+    Given a Graph and a node list returns the subgraph generated with the nodes
+    in the node list, the first neighbors of those nodes, and the edges between
+    them
+    
+    
+    Parameters:
+        :kegg_graph (Graph): input graph, has to be generated via gen_graph()
+        :nodelist (list): list of nodes for the nighbor graph
+        :name (str): optional, name of the graph
+        
+    Returns:
+        :neighbor_graph (Graph): graph of nodelist, first neighbors of those nodes\
+        and edges between them
+    .. seealso:: gen_graph()
+    """
+    nodeset = set()
+    
+    nodeset.update(set(nodelist))
+    
+    for node in nodelist:
+        try:
+            nodeset.update(list(graph[node]))
+        except KeyError:
+            pass
+        
+    
+    neighbor_graph = nx.subgraph(graph, nodeset)
+    
+    if name is None:
+        name = "neighbor_graph_of_{}".format(graph.name)
+        
+    neighbor_graph.name = name
+    
+    return neighbor_graph
 
 def projected_graph(graph, nodelist, multigraph = False, name = None):
     """Calculates the projected graph respect to a node list     
@@ -321,7 +385,10 @@ def projected_graph(graph, nodelist, multigraph = False, name = None):
     
     common_nodes = graphnodes_set & nodelist_set
     
-    nodetype = graph.nodes[list(common_nodes)[0]]['nodetype']
+    try:
+        nodetype = graph.nodes[list(common_nodes)[0]]['nodetype']
+    except IndexError:
+        raise NoProjectedError(graph)
     
     disjoint_nodes = nodelist_set - set(get_nodetype_nodes(graph, nodetype))
     
@@ -336,7 +403,19 @@ def projected_graph(graph, nodelist, multigraph = False, name = None):
     projected_graph.name = name
     
     return projected_graph
+
+def graph_measures(graph):
     
+    max_connected_component = connected_components(graph)[0]
+    
+    measures = {'totnodes': len(max_connected_component.nodes),
+                'totedges': len(max_connected_component.edges),
+                'ncliques': len(list(nx.enumerate_all_cliques(max_connected_component))),
+                'radius':   nx.radius(max_connected_component),
+                'diameter': nx.diameter(max_connected_component)}
+    
+    return measures
+
 # =============================================================================
 # PLOTTING
 # =============================================================================
@@ -370,8 +449,7 @@ def draw(graph,
     
     if title is None: title = "{} > {} graph".format(graph_nodetypes[0], graph_nodetypes[1])
     
-    layouts = {'bipartite_layout':      nx.bipartite_layout,
-             'circular_layout':         nx.circular_layout,
+    layouts = {'circular_layout':         nx.circular_layout,
              'kamada_kawai_layout':     nx.kamada_kawai_layout,
              'random_layout':           nx.random_layout,
              'shell_layout':            nx.shell_layout,
