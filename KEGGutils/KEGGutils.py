@@ -25,16 +25,6 @@ class NotAKeggGraphError(KeggUtilsGraphException):
 class MissingNodetypeError(KeggUtilsGraphException):
     pass
 
-class NoDescendantError(KeggUtilsGraphException):
-    def __init__(self, graph, msg = None):
-        self.graph = graph
-        
-        if msg is None:
-            msg = "Graph {} has no descendant graph".format(graph.name)
-            
-        super(NoDescendantError, self).__init__(graph, msg)
-        
-        
 class NoProjectedError(KeggUtilsGraphException):
     def __init__(self, graph, msg = None):
         self.graph = graph
@@ -342,37 +332,6 @@ def get_unique_nodetypes(graph):
     
     return unique_nodetypes
 
-
-def descendant_graph(graph, nodelist, name = None):
-    """Given a KEGG graph and a set of nodes returns graph of descendant nodes    
-    Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via gen_graph()
-        :nodelist (list): list of nodes for the descendant graph
-        :name (str): optional, name of the graph
-        
-    Returns:
-        :descendant_graph (Graph): graph of descendant nodes
-    .. seealso:: gen_graph()
-    """
-    nodeset = set()
-    
-    for node in nodelist:
-        try:
-            nodeset.update(nx.descendants(graph, node))
-        except nx.NetworkXError:
-            pass
-            
-    if len(nodeset) == 0:
-        raise NoDescendantError(graph)
-        
-    descendant_graph = nx.subgraph(graph, nodeset)
-    
-    if name is None:
-        name = "desc_of_{}".format(graph.name) 
-    
-    descendant_graph.name = name
-    
-    return descendant_graph
 
 def neighbor_graph(graph, nodelist, name = None):
     """Neighbor Subgraph
