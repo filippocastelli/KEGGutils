@@ -5,4 +5,4 @@ from .KEGGutils import (kegg_graph, get_organism_codes,kegg_url,
                      NotAKeggGraphError,MissingNodetypeError, NoProjectedError,
                      neighbor_graph, download_dir, delete_cached_files, linked_nodes)
 
-from ._version import __version__
+__version__ = "0.1.1"
