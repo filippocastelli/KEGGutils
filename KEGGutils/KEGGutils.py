@@ -298,7 +298,9 @@ def get_nodetype_nodes(kegg_graph, nodetype):
     if nodetype not in get_unique_nodetypes(kegg_graph):
         raise MissingNodetypeError(kegg_graph, "Requested nodetype is missing in graph nodes")
         
-    return [n for n in kegg_graph if kegg_graph.node[n]['nodetype'] == nodetype]
+    node_list = [n for n in kegg_graph if kegg_graph.node[n]['nodetype'] == nodetype]
+    
+    return dict.fromkeys(node_list, nodetype)
 
 def connected_components(graph):
     """ Returns a list of connected components for a given graph, ordered by size"""
@@ -332,8 +334,16 @@ def get_unique_nodetypes(graph):
     
     return unique_nodetypes
 
+def linked_nodes(graph, node):
+    
+    linked_nodes = list(graph[node])
+    attributes = nx.get_node_attributes(graph, 'nodetype')
 
-def neighbor_graph(graph, nodelist, name = None):
+    linked_nodes_dict = dict(((k, attributes[k]) for k in linked_nodes))
+    
+    return linked_nodes_dict
+
+def neighbor_graph(graph, node_dict, name = None, keep_isolated_nodes = False):
     """Neighbor Subgraph
     
     Given a Graph and a node list returns the subgraph generated with the nodes
@@ -351,19 +361,36 @@ def neighbor_graph(graph, nodelist, name = None):
         and edges between them
     .. seealso:: gen_graph()
     """
+    
+    
     nodeset = set()
     
-    nodeset.update(set(nodelist))
+    input_nodes_set = set(node_dict.keys())
     
-    for node in nodelist:
+    
+    try:
+        nx.get_node_attributes(graph, 'nodetype')
+    except:
+        NotAKeggGraphError(graph)
+    
+    nodeset.update(input_nodes_set)
+    
+    for node in input_nodes_set:
         try:
             nodeset.update(list(graph[node]))
         except KeyError:
             pass
         
+    #we already have attributes for nodes in graph
+    neighbor_graph = nx.Graph.copy(nx.subgraph(graph, nodeset))
     
-    neighbor_graph = nx.subgraph(graph, nodeset)
-    
+    # ok now we want to add input nodes that are left behind
+    if keep_isolated_nodes == True:
+        difference_set = input_nodes_set - set(neighbor_graph.nodes)
+        
+        for node in difference_set:
+            neighbor_graph.add_node(node, nodetype = node_dict[node])
+
     if name is None:
         name = "neighbor_graph_of_{}".format(graph.name)
         
@@ -384,7 +411,7 @@ def projected_graph(graph, nodelist, multigraph = False, name = None):
     """
     
     graphnodes_set = set(graph.nodes)
-    nodelist_set = set(nodelist)
+    nodelist_set = set(nodelist.keys())
     
     common_nodes = graphnodes_set & nodelist_set
     
@@ -395,7 +422,7 @@ def projected_graph(graph, nodelist, multigraph = False, name = None):
     
     disjoint_nodes = nodelist_set - set(get_nodetype_nodes(graph, nodetype))
     
-    projected_graph = nx.projected_graph(graph, common_nodes, multigraph)
+    projected_graph = nx.Graph.copy(nx.projected_graph(graph, common_nodes, multigraph))
     
     for dis_node in disjoint_nodes:
         
