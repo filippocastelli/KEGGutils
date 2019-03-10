@@ -1,13 +1,13 @@
 import networkx as nx
 import matplotlib.pylab as plt
 import requests
-import os
+import os, glob
 
-#%%
+    #%%
 # =============================================================================
 # ERRORS AND EXCEPTIONS
 # =============================================================================
-download_dir = "./kegg_downloads/"
+
 
 class KeggUtilsGraphException(Exception):
     def __init__(self, graph, msg=None):
@@ -59,7 +59,9 @@ class KEGGOnlineError(Exception):
 # =============================================================================
 # DOWNLOADING FROM KEGG
 # =============================================================================
-        
+download_dir = "./kegg_downloads/"    
+
+
 def file_exists(filename):
     return os.path.isfile(download_dir + filename)
 
@@ -68,37 +70,61 @@ def mkdir(directory):
         os.mkdir(directory)
     except FileExistsError:
         pass
+    
+def delete_cached_files():
+    files_to_remove = glob.glob(download_dir + "*")
+    
+    print("> deleting the following files from {}".format(download_dir))
+    print(*files_to_remove, sep='\n')
+    
+    for file in files_to_remove:
+        os.remove(file)
+    
    
-def download_textfile(url, filename, force_download = False, finished_message = False):
+def download_textfile(url, filename,
+                      force_download = False,
+                      verbose = True):
+    
+    start_message = "> Downloading {} from KEGG at {}".format(filename, url)
+    end_message = "succesfully downloaded {}".format(filename)
     filepath = download_dir + filename
     if (not file_exists(filename)) or force_download:
-        request = get_online_request(url, finished_message)
-        text = request.text.splitlines()
+        if verbose:
+            print(start_message)
+        request = get_online_request(url)
+        text = request.text
         mkdir(download_dir)
         with open(filepath, 'w+') as text_file:
-            text_file.write(request.text)
+            text_file.write(text)
+        if verbose == True:
+            print(end_message)
+#            print("\n")
     else:
+        if verbose:
+            print("> File {} already present in {}".format(filename, url))
+            print("reading from cached file...")
+#            print("\n")
+        
         with open(filepath, 'r') as read_file:
             text =  read_file.read()
     return text
             
-def get_online_request(url, finished_msg = False):
+def get_online_request(url):
     """ Just an errored proxy for requests.get()"""
     request = requests.get(url) 
     if request.ok == False:
-        raise KEGGOnlineError(request)  
-    if finished_msg == True:
-        print("downloaded succesfully from {}".format(url))   
+        raise KEGGOnlineError(request)   
     return request
 
 def get_list(item):
     """Returns KEGG list of codes """
     
-    org_url = "http://rest.kegg.jp/list/{}".format(item)
+    url = "http://rest.kegg.jp/list/{}".format(item)
+    filename = item+"_list"
     
     itemlist = []
-    print("Downloading KEGG {} list...".format(item))
-    list_fulltext = get_online_request(org_url, finished_msg = True).text
+    
+    list_fulltext = download_textfile(url, filename)
     for line in list_fulltext.splitlines():
         entry, description = line.strip().split('\t')
         itemlist.append(entry)
@@ -109,9 +135,11 @@ def get_organism_codes():
     """Returns all KEGG Organism name codes """
     
     org_url = "http://rest.kegg.jp/list/organism"
+    org_filename = "organism_code_list"
+    
     org_codes = []
-    print("Downloading KEGG organism list...")
-    organism_fulltext = get_online_request(org_url, finished_msg = True).text
+    
+    organism_fulltext = download_textfile(org_url, org_filename, verbose = False)
     
     for line in organism_fulltext.splitlines():
         T_identifier, kegg_code, description, hier= line.strip().split('\t')
@@ -147,15 +175,9 @@ def kegg_url(target_db, source_db):
                      "disease", "drug", "dgroup", "environ", "atc",
                      "jtc", "ndc", "yj", "pubmed"]
     
-    #don't wanna download list it every time, too heavy
-    #it's time for ugly global variables
-    #just declaring doesnt actually create it
-    global organism_names
-    
-    try:
-        organism_names
-    except NameError:
-        organism_names = get_organism_codes()
+
+
+    organism_names = get_organism_codes()
     
     assert target_db != source_db, "Same key for target and source"
     assert all(key in db_categories+organism_names for key in [target_db, source_db]), "Invalid target or source KEGG database key"
@@ -173,8 +195,9 @@ def get_infos(item, verbose = False):
         """
     
     url = "http://rest.kegg.jp/get/"+item
-
-    infos = get_online_request(url).text
+    filename = item+"_description"
+    
+    infos = download_textfile(url, filename, verbose = False)
     if verbose == False:
         infos = "\n".join(infos.splitlines()[1:4])
         
@@ -198,10 +221,10 @@ def kegg_graph(source_db, target_db):
 
         .. note:: gene category is represented with the corresponding KEGG organism code
         """
+    graphname = "{}_to_{}".format(source_db, target_db)
     
     url = kegg_url(target_db, source_db)
-    print("Downloading database {} -> {}...".format(source_db, target_db))
-    text = get_online_request(url, finished_msg = True).text
+    text = download_textfile(url, graphname)
     
     nodes1 = []
     nodes2 = []
@@ -211,9 +234,10 @@ def kegg_graph(source_db, target_db):
         nodes2.append(n2)
 
     graph = nx.Graph()
+    graph.name = graphname
     populate_graph(graph, nodes1, nodes2, source_db, target_db)
     
-    graph.name = "{}_to_{}".format(source_db, target_db)
+    
     
     return graph
 

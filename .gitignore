@@ -3,5 +3,11 @@
 *.egg
 *.egg-info
 
+
+
+
 dist
 build
+source
+.ipynb_checkpoints
+kegg_downloads
