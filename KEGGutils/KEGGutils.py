@@ -1,12 +1,14 @@
 import networkx as nx
 import matplotlib.pylab as plt
 import requests
-
+import os
 
 #%%
 # =============================================================================
 # ERRORS AND EXCEPTIONS
 # =============================================================================
+download_dir = "./kegg_downloads/"
+
 class KeggUtilsGraphException(Exception):
     def __init__(self, graph, msg=None):
         self.graph = graph
@@ -57,14 +59,34 @@ class KEGGOnlineError(Exception):
 # =============================================================================
 # DOWNLOADING FROM KEGG
 # =============================================================================
+        
+def file_exists(filename):
+    return os.path.isfile(download_dir + filename)
+
+def mkdir(directory):
+    try:
+        os.mkdir(directory)
+    except FileExistsError:
+        pass
+   
+def download_textfile(url, filename, force_download = False, finished_message = False):
+    filepath = download_dir + filename
+    if (not file_exists(filename)) or force_download:
+        request = get_online_request(url, finished_message)
+        text = request.text.splitlines()
+        mkdir(download_dir)
+        with open(filepath, 'w+') as text_file:
+            text_file.write(request.text)
+    else:
+        with open(filepath, 'r') as read_file:
+            text =  read_file.read()
+    return text
+            
 def get_online_request(url, finished_msg = False):
     """ Just an errored proxy for requests.get()"""
-    
-    request = requests.get(url)
-    
+    request = requests.get(url) 
     if request.ok == False:
-        raise KEGGOnlineError(request)
-        
+        raise KEGGOnlineError(request)  
     if finished_msg == True:
         print("downloaded succesfully from {}".format(url))   
     return request
@@ -77,7 +99,6 @@ def get_list(item):
     itemlist = []
     print("Downloading KEGG {} list...".format(item))
     list_fulltext = get_online_request(org_url, finished_msg = True).text
-    
     for line in list_fulltext.splitlines():
         entry, description = line.strip().split('\t')
         itemlist.append(entry)
@@ -88,7 +109,6 @@ def get_organism_codes():
     """Returns all KEGG Organism name codes """
     
     org_url = "http://rest.kegg.jp/list/organism"
-    
     org_codes = []
     print("Downloading KEGG organism list...")
     organism_fulltext = get_online_request(org_url, finished_msg = True).text
