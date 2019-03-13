@@ -125,8 +125,10 @@ def msg_file_already_exists(filename, download_dir, verbose):
         print("reading from cached file...")
 
 def file_exists(filename):
-    return os.path.isfile(download_dir + filename)
+    return os.path.isfile(get_fname_path(filename))
 
+def get_fname_path(filename):
+    return download_dir+ filename
 
 def mkdir(directory):
     try:
@@ -187,42 +189,46 @@ def download_json(url, filename, force_download=False, verbose=True):
             
     return data
 
+
+def savepic(url, fpath):
+    response = requests.get(url, stream = True)
+    
+    with open(fpath, 'wb') as out_file:
+        shutil.copyfileobj(response.raw, out_file)
+        
+    return response.raw
+        
+        
+
 def download_pic(url, filename, force_download = False, verbose = False):
     
-    filepath = download_dir + filename
-    
     possible_filenames = {'gif': filename + '.gif', 
-                           'png': filename + '.png'}
-    
-    possible_filepaths = {'gif': filepath + '.gif',
-                           'png': filepath + '.png'}
-    
-    if all(not file_exists(filenames) for filenames in possible_filenames) or force_download:
+                       'png': filename + '.png'}
+
+    if all(not file_exists(filenames) for filenames in possible_filenames.values()) or force_download:    
         
         msg_start_download(filename, url, verbose)
-        response = requests.get(url, stream=True)
         
-        filetype = imghdr.what(response.raw)
+        tmp_path = get_fname_path("tmp_img")
         
-        assert filetype in ["gif", "png"], "Filetype should always be png or gif"
+        img = savepic(url, tmp_path)
         
+        img_format = imghdr.what(tmp_path)
         
-        with open(possible_filepaths[filetype], 'wb') as out_file:
-            shutil.copyfileobj(response.raw, out_file)
-            
-        img = mpgimg.imread(possible_filepaths[filetype])
+        assert img_format in ["gif", "png"], "Image format is wrong, something funny is happening in decoding probably"
         
-        msg_end_download(filename, verbose)
+        os.rename(tmp_path, get_fname_path(filename)+"."+img_format)
         
-        return img
         
     else:
-        with open(filepath)
+        for imgformat in ["gif", "png"]:
+            try:
+                img = mpimg.imread(get_fname_path(filename)+"."+imgformat)
+            except:
+                FileNotFoundError
+    return img
 
 
-# =============================================================================
-#  CODE TO FIX NO TIME NOW
-# =============================================================================
 def get_online_request(url):
     """ Just an errored proxy for requests.get()"""
     request = requests.get(url)
