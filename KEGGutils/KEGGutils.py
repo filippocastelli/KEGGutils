@@ -283,13 +283,12 @@ def keggapi_list(database, option = None, want_descriptions = False):
     
     if want_descriptions == False:
         itemlist = process_request_text(list_fulltext, want_descr=want_descriptions)
-    if want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(list_fulltext, want_descr=want_descriptions)
-
-    if want_descriptions == False:
         return itemlist
-    else:
-        assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
+    
+    elif want_descriptions == True:
+        itemlist, descriptionlist = process_request_text(list_fulltext, want_descr=want_descriptions)
+        assert len(itemlist) == len(descriptionlist), "different length, funny innit"
+        
         return itemlist, descriptionlist
 
 
@@ -312,19 +311,17 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
     fulltext = download_textfile(url, filename, verbose = verbose)
     if want_descriptions == False:
         itemlist = process_request_text(fulltext, want_descr=want_descriptions)
-    if want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(fulltext, want_descr=want_descriptions)
-
-    if want_descriptions == False:
         return itemlist
-    else:
+    elif want_descriptions == True:
+        itemlist, descriptionlist = process_request_text(fulltext, want_descr=want_descriptions)
         assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
+        
         return itemlist, descriptionlist
     
     
 def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = True):
     
-    options = ["aase","ntseq", "mol", "kcf","image","conf", "kgml","json"]
+    options = ["aaseq","ntseq", "mol", "kcf","image","conf", "kgml","json"]
     
     if (option is not None) & (option not in options):
         raise KEGGKeyError(option, msg = "option {} invalid for GET".format(option))
@@ -353,22 +350,16 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         print(text)
         return text
     elif option == "image":
-        response = requests.get(url, stream=True)
+        img = download_pic(url, filename, verbose = True)
+        plt.imshow(img)
         
-        with open('img.png', 'wb') as out_file:
-            shutil.copyfileobj(response.raw, out_file)
-            del response
-        
-
+        return img
     
     if want_descriptions == False:
-        itemlist = process_request_text(fulltext, want_descr=want_descriptions)
-    if want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(fulltext, want_descr=want_descriptions)
-
-    if want_descriptions == False:
+        itemlist = process_request_text(text, want_descr=want_descriptions)
         return itemlist
-    else:
+    elif want_descriptions == True:
+        itemlist, descriptionlist = process_request_text(text, want_descr=want_descriptions)
         assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
         return itemlist, descriptionlist
 
