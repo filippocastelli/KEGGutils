@@ -81,18 +81,18 @@ def has_nodetypes(graph):
         return True
 
 
-def get_nodetype_nodes(kegg_graph, nodetype):
+def get_nodes_by_nodetype(kegg_graph, nodetype):
     """Given a KEGG graph returns all the nodes for a given nodetype
     
     Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via kegg_graph()
+        :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
         :nodetype (str): nodetype, is generally a <database> KEGG name
         
     Returns:
         :nodedict (dict): dict of nodes and corresponding nodetype
     Example:
-        >>> KEGG_graph = kegg_graph("hsa", "disease")
-        >>> nodedict = get_nodetype_nodes(KEGG_graph, "hsa")
+        >>> KEGG_graph = kegg_link_graph("hsa", "disease")
+        >>> nodedict = get_nodes_by_nodetype(KEGG_graph, "hsa")
         >>> list(nodedict.items())[:5]
         [('hsa:7428', 'hsa'),
          ('hsa:4233', 'hsa'),
@@ -100,7 +100,7 @@ def get_nodetype_nodes(kegg_graph, nodetype):
          ('hsa:201163', 'hsa'),
          ('hsa:7030', 'hsa')]
 
-    .. seealso:: kegg_graph()
+    .. seealso:: kegg_link_graph()
         """
 
     if nodetype not in get_unique_nodetypes(kegg_graph):
@@ -125,16 +125,16 @@ def get_unique_nodetypes(graph):
     """Given a KEGG graph returns list of its unique nodetypes
     
     Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via kegg_graph()
+        :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
         
     Returns:
         :nodetypes (list): list of unique nodetypes
     Example:
-        >>> KEGG_graph = kegg_graph("hsa", "disease")
+        >>> KEGG_graph = kegg_link_graph("hsa", "disease")
         >>> nlist = get_unique_nodetypes(KEGG_graph)
         ['disease','hsa']
 
-    .. seealso:: kegg_graph()
+    .. seealso:: kegg_link_graph()
         """
     if has_nodetypes(graph) == False:
         raise NotAKeggGraphError(graph, "Graph nodes are missing nodetype attribute")
@@ -150,13 +150,13 @@ def linked_nodes(graph, node):
         Returns all nodes in graph linked to node
     
     Parameters:
-        :graph (Graph): input graph, has to be generated via kegg_graph()
+        :graph (Graph): input graph, has to be generated via kegg_link_graph()
         :node (str): name of a node in graph
         
     Returns:
         :linked_nodes (dict): dict of linked nodes { node: nodetype}
 
-    .. seealso:: kegg_graph()
+    .. seealso:: kegg_link_graph()
         """
 
     linked_nodes = list(graph[node])
@@ -176,14 +176,14 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
     
     
     Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via kegg_graph()
+        :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
         :nodelist (list): list of nodes for the nighbor graph
         :name (str): optional, name of the graph
         
     Returns:
         :neighbor_graph (Graph): graph of nodelist, first neighbors of those nodes\
         and edges between them
-    .. seealso:: kegg_graph()
+    .. seealso:: kegg_link_graph()
     """
 
     nodeset = set()
@@ -224,14 +224,14 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
 def projected_graph(graph, nodelist, multigraph=False, name=None):
     """Calculates the projected graph respect to a node list     
     Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via kegg_graph()
+        :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
         :nodelist (list): list of nodes
         :multigraph (bool): if True 
         :name (str): optional name of the graph
         
     Returns:
         :descendant_graph (Graph): graph of descendant nodes
-    .. seealso:: kegg_graph()
+    .. seealso:: kegg_link_graph()
     """
 
     graphnodes_set = set(graph.nodes)
@@ -244,7 +244,7 @@ def projected_graph(graph, nodelist, multigraph=False, name=None):
     except IndexError:
         raise NoProjectedError(graph)
 
-    disjoint_nodes = nodelist_set - set(get_nodetype_nodes(graph, nodetype))
+    disjoint_nodes = nodelist_set - set(get_nodes_by_nodetype(graph, nodetype))
 
     projected_graph = nx.Graph.copy(nx.projected_graph(graph, common_nodes, multigraph))
 
@@ -281,7 +281,7 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False):
     """Graph drawing made a bit easier
     
     Parameters:
-        :graph (Graph): input graph, has to be generated via kegg_graph()
+        :graph (Graph): input graph, has to be generated via kegg_link_graph()
         :layout (str): layout type, choose from 'bipartite_layout',\
         'circular_layout','kamada_kawai_layout','random_layout',\ 'shell_layout',\
         'spring_layout','spectral_layout'

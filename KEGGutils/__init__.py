@@ -1,25 +1,23 @@
-from .KEGGutils import (
-    kegg_graph,
-    get_organism_codes,
-    kegg_url,
-    get_nodetype_nodes,
-    connected_components,
-    get_infos,
-    get_unique_nodetypes,
-    has_nodetypes,
-    draw,
-    projected_graph,
-    keggapi_list,
-    graph_measures,
-    KeggUtilsGraphException,
-    NotAKeggGraphError,
-    MissingNodetypeError,
-    NoProjectedError,
-    neighbor_graph,
-    download_dir,
-    delete_cached_files,
-    linked_nodes,
-    db_categories,
-)
+from .KEGGapi import (
+        delete_cached_files,
+        keggapi_list,
+        keggapi_find,
+        keggapi_get,
+        keggapi_link,
+        get_organism_codes,
+        get_infos,
+        db_categories,
+        download_dir)
 
-__version__ = "0.1.3"
+from .KEGGutils import (
+        kegg_link_graph,
+        has_nodetypes,
+        get_nodes_by_nodetype,
+        get_unique_nodetypes,
+        connected_components,
+        projected_graph,
+        neighbor_graph,
+        graph_measures,
+        draw)
+
+__version__ = "0.1.4"
