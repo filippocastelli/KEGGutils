@@ -6,7 +6,6 @@ class KeggUtilsGraphException(Exception):
     def __init__(self, graph, msg=None):
         self.graph = graph
         if msg is None:
-            # Set some default useful error message
             msg = "There's a problem with graph: {}".format(graph.name)
 
         super(KeggUtilsGraphException, self).__init__(msg)
@@ -59,7 +58,7 @@ class KEGGInvalidFileContent(KEGGOnlineError):
         self.content = content
 
         if msg is None:
-            msg = "Invalid content {} in file {}".format(self.content, self.key)
+            msg = "Invalid content {} in file {}".format(self.content, self.file)
             
-        super(KEGGKeyError, self).__init__(msg)
+        super(KEGGInvalidFileContent, self).__init__(msg)
         
