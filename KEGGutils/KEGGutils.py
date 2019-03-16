@@ -10,7 +10,25 @@ from KEGGapi import keggapi_link
 # =============================================================================
 
 
-def kegg_graph(source, target, force_download = False):
+def kegg_link_graph(source, target, force_download = False):
+    """Returns a NetworkX bipartite link graph with nodes from source and target KEGG databases 
+    
+    Parameters
+    ----------
+    source : str
+        source database
+    target : str
+        target database
+    force_download : bool, optional
+        if set to True overwrites pre-existing database file with the same name (the default is False, which [default_description])
+    
+    Returns
+    -------
+    graph
+        bipartite link graph
+    """
+
+
     graphname = "{}_to_{}".format(source, target)
     
     nodes1, nodes2 = keggapi_link(source, target, verbose = True)
@@ -23,15 +41,23 @@ def kegg_graph(source, target, force_download = False):
 
 
 def populate_graph(graph, nodes_1, nodes_2, nodetype1, nodetype2):
-    """Populates a pre-existing Graph given two list of nodes and two node labels
+    """Populates a pre-existing Graph given two list of nodes and nodetypes
     
-    Parameters:
-        :graph (Graph): input graph
-        :nodes_1(list): first list of nodes
-        :nodes_2(list): second list of nodes
-        :nodetype1(str): first nodetype
-        :nodetype2(str): second nodetype
-        """
+    Parameters
+    ----------
+    graph : graph
+        graph to populate
+    nodes_1 : list
+        list of nodes to update
+    nodes_2 : list
+        list of nodes to update
+    nodetype1 : str
+        first nodetype
+    nodetype2 : str
+        second nodetype
+    
+    """
+
 
     for i, nodo in enumerate(nodes_1):
         graph.add_node(nodo, nodetype=nodetype1)
