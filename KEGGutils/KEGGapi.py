@@ -75,18 +75,22 @@ def msg_file_already_exists(filename, download_dir, verbose):
 # FILE MANAGEMENT
 # =============================================================================
 def file_exists(filename):
+    """Checks if file exists, accepts only filename"""
     return os.path.isfile(get_fname_path(filename))
 
 def get_fname_path(filename):
+    """ Returns the complete path for a filename using download_dir"""
     return download_dir+ filename
 
 def mkdir(directory):
+    """ Creates a directory if it doesn't already exsist"""
     try:
         os.mkdir(directory)
     except FileExistsError:
         pass
 
 def delete_cached_files():
+    """Deletes all files in download_dir"""
     files_to_remove = glob.glob(download_dir + "*")
 
     print("> deleting the following files from {}".format(download_dir))
@@ -102,6 +106,7 @@ def delete_cached_files():
 
 # > URL REQUESTS
 def request_image(url, fpath):
+    """Creates a requets for url, saves the response in fpath, returns response.raw"""
     response = requests.get(url, stream = True)
     
     with open(fpath, 'wb') as out_file:
@@ -118,6 +123,18 @@ def get_online_request(url):
     return request
 
 def process_request_text(fulltext, want_descr = False):
+    """Preprocessing of item-description type text
+    
+    Separates couple of words in item \t description format
+    
+    Parameters:
+        :fulltext (str): raw text
+        :wannt_descr (bool): if False ignores descriptions and returns items only
+        
+    
+    Returns:
+        itemlist, *descriptionlist (list): list of items and descriptions (optional)"""
+        
     itemlist = []
     descriptionlist = []
     
@@ -132,6 +149,20 @@ def process_request_text(fulltext, want_descr = False):
 
 
 def download_textfile(url, filename, force_download=False, verbose=True):
+    """downloads a text file given an url and a filename
+    
+    Arguments:
+        url {str} -- url for the request
+        filename {[type]} -- desired file name
+    
+    Keyword Arguments:
+        force_download {bool} -- If set to True replaces previous versions of the file (default: {False})
+        verbose {bool} -- Display additional messages during download (default: {True})
+    
+    
+    Returns:
+        text [str] -- downloaded text
+    """
 
     filepath = download_dir + filename
     if (not file_exists(filename)) or force_download:
@@ -157,6 +188,24 @@ def download_textfile(url, filename, force_download=False, verbose=True):
     return text
 
 def download_json(url, filename, force_download=False, verbose=True):
+    """ Downloads a json file
+    
+    Parameters
+    ----------
+    url : str
+        url for the requests
+    filename : str
+        desired filename
+    force_download : bool, optional
+            if True replaces any previously downloaded file with the same name (the default is False)
+    verbose : bool, optional
+        displays additional messages (the default is True)
+    
+    Returns
+    -------
+    json
+        json data
+    """
 
     filepath = download_dir + filename
     if (not file_exists(filename)) or force_download:
@@ -179,6 +228,25 @@ def download_json(url, filename, force_download=False, verbose=True):
 
 
 def download_pic(url, filename, force_download = False, verbose = False):
+    """Downloads a .gif or .png pic fom an url
+    
+    Parameters
+    ----------
+    url : str
+        url for the request
+    filename : str
+        desired filename
+    force_download : bool, optional
+        if set to True replaces any previously downloaded file under the same filename (the default is False)
+    verbose : bool, optional
+        if set to True displays additional messages (the default is False)
+    
+    Returns
+    -------
+    image
+        img data stream
+    """
+
     
     possible_filenames = {'gif': filename + '.gif', 
                        'png': filename + '.png'}
@@ -211,7 +279,26 @@ def download_pic(url, filename, force_download = False, verbose = False):
     
 
 def keggapi_list(database, option = None, want_descriptions = False, force_download = False):
-    """Returns KEGG list of codes """
+    """Interface for the KEGG API LIST command
+
+    See https://www.kegg.jp/kegg/rest/keggapi.html for usage
+
+    Parameters
+    ----------
+    database : str
+        Database you wish to obtain a list about, one from pathway | brite | module | ko | genome | <org> | vg | ag | compound | glycan | reaction | rclass | enzyme | network | variant | disease | drug | dgroup | environ | organism | <medicus>
+    option : str, optional
+        'xl' option is applicable only to the 'brite' database for listing binary relation files (the default is None)
+    want_descriptions : bool, optional
+        If True returns descriptions for each item (the default is False)
+    force_download : bool, optional
+        If true replaces any pre-existing downloaded file (the default is False)
+    
+    Returns
+    -------
+    item, descritpions
+        lists for items and their descriptions
+    """
     
     org_codes = get_organism_codes()
     if database not in db_categories:
@@ -242,6 +329,32 @@ def keggapi_list(database, option = None, want_descriptions = False, force_downl
 
 
 def keggapi_find(database, query, option = None, want_descriptions = False, verbose = False, force_download = False):
+    """Interface for the KEGG API FIND command
+    
+    See https://www.kegg.jp/kegg/rest/keggapi.html for further info
+    
+    Parameters
+    ----------
+    database : str
+        KEGG database you wish to query on, one from pathway | brite | module | ko | genome | genes | <org> | vg | ag | ligand | compound | glycan | reaction | rclass | enzyme | network | variant | disease | drug | dgroup | environ | <medicus>  
+    query : str
+        Desired query
+    option : str, optional
+        if database is "compound" or "drug", possible options are "formula", "exact mass" and "mol_weight" (the default is None)
+    want_descriptions : bool, optional
+        if set to True returns a list of descriptions for the found items (the default is False,)
+    verbose : bool, optional
+        if set to True displays additional messages (the default is False)
+    force_download : bool, optional
+        if set to True replaces any previously downloaded file under the same name (the default is False)
+    
+    Returns
+    -------
+    list, list
+        list of items and descriptions
+    """
+
+
     
     options = ["formula", "exact_mass", "mol_weight"]
     
@@ -269,6 +382,24 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
     
     
 def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = True, force_download = False):
+    """Interface for the KEGG API GET command
+
+    for further info read https://www.kegg.jp/kegg/rest/keggapi.html
+    
+    Parameters
+    ----------
+    dbentry : str
+        KEGG database entry you wish to GET, one from pathway | brite | module | ko | genome | <org> | vg | ag | compound | glycan | reaction | rclass | enzyme | network | variant | disease | drug | dgroup | environ | disease_ja | drug_ja | dgroup_ja | environ_ja | compound_ja
+    option : str, optional
+        one from aaseq | ntseq | mol | kcf | image | conf | kgml | json (the default is None])
+    want_descriptions : bool, optional
+        if True returns a list of descriptions for the requested items (the default is False)
+    verbose : bool, optional
+        is True displays additional messages  (the default is True)
+    force_download : bool, optional
+        if set to True replaces any file under the same filename (the default is False)
+    """
+
     
     options = ["aaseq","ntseq", "mol", "kcf","image","conf", "kgml","json"]
     
@@ -313,6 +444,32 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         return itemlist, descriptionlist
     
 def keggapi_link(source, target, verbose = True, force_download = False):
+    """Interface for the KEGG API LINK command 
+
+    for further info see 
+    
+    Parameters
+    ----------
+    source : [type]
+        [description]
+    target : [type]
+        [description]
+    verbose : bool, optional
+        [description] (the default is True, which [default_description])
+    force_download : bool, optional
+        [description] (the default is False, which [default_description])
+    
+    Raises
+    ------
+    KEGGKeyError
+        [description]
+    
+    Returns
+    -------
+    [type]
+        [description]
+    """
+
     
     if target not in db_categories:
         raise KEGGKeyError(target, msg = "source database {} is not a valid database".format(target))
