@@ -1,7 +1,9 @@
 # =============================================================================
-# MISC
+# MISC HELPER FUNCTIONS
 # =============================================================================
 def push_backslash(stuff):
+    """ push a backslash before a word"""
+    
     stuff_url = ""
     
     if stuff is None:
