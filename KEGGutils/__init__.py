@@ -1,4 +1,5 @@
 from .KEGGapi import (
+        is_kegg_up,
         delete_cached_files,
         keggapi_list,
         keggapi_find,
@@ -12,6 +13,7 @@ from .KEGGapi import (
 from .KEGGutils import (
         kegg_link_graph,
         has_nodetypes,
+        linked_nodes,
         get_nodes_by_nodetype,
         get_unique_nodetypes,
         connected_components,
