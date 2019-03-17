@@ -107,6 +107,7 @@ def is_kegg_up():
     """Sends a simple HTTP requests to see if KEGG is currently reachable"""
     
     resp = requests.head('http://rest.kegg.jp/info/kegg')
+    
     return resp.status_code == 200
 
 # > URL REQUESTS
@@ -114,10 +115,13 @@ def request_image(url, fpath):
     """Creates a requets for url, saves the response in fpath, returns response.raw"""
     response = requests.get(url, stream = True)
     
-    with open(fpath, 'wb') as out_file:
-        shutil.copyfileobj(response.raw, out_file)
+    if response.status_code == 200:
+        with open(fpath, 'wb') as out_file:
+            shutil.copyfileobj(response.raw, out_file)
+    else:
+        raise KEGGOnlineError
         
-    return response.raw
+    return response.status_code == 200
 
 
 def get_online_request(url):
@@ -217,11 +221,11 @@ def download_json(url, filename, force_download=False, verbose=True):
         msg_start_download(filename, url, verbose)
         
         request = get_online_request(url)
-        json_file = request.json()
+        data = request.json()
         mkdir(download_dir)
         
         with open(filepath, "w+") as outfile:
-            json.dump(json_file, outfile)
+            json.dump(data, outfile)
             
         msg_end_download(filename, verbose)
         
@@ -262,7 +266,7 @@ def download_pic(url, filename, force_download = False, verbose = False):
         
         tmp_path = get_fname_path("tmp_img")
         
-        img = request_image(url, tmp_path)
+        imgformat = request_image(url, tmp_path)
         
         img_format = imghdr.what(tmp_path)
         
