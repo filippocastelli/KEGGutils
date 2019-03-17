@@ -7,8 +7,9 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
 import KEGGutils.KEGGapi as kgapi
+import KEGGutils.KEGGerrors as kgerrors
 
-from tests.download_fresh_test_responses import unpickle_resp
+from tests.download_fresh_test_responses import unpickle_resp, test_files_path
 
 
 # This method will be used by the mock to replace requests.get
@@ -43,6 +44,10 @@ def mocked_requests_get(*args, **kwargs):
         return MockResponse(url = args[0],
                             text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2",
                             status_code = 200)
+    elif args[0] == "http://rest.kegg.jp/returninvalidtext":
+        return MockResponse(url = args[0],
+                            text = '\n',
+                            status_code = 200)
 
     return MockResponse()
 
@@ -50,7 +55,7 @@ def mocked_requests_get(*args, **kwargs):
 class KEGGapiTest(unittest.TestCase):
     
     @patch('requests.get', side_effect = mocked_requests_get)
-    def test_download_json_file_doesnt_exist_yet(self, mockrequestsget):
+    def test_download_json_file_doesnt_exist(self, mockrequestsget):
         
         data = kgapi.download_json("http://rest.kegg.jp/get/br:br08301/json", "json_testing")
         self.assertEqual(data, {"key1": "value1"})
@@ -72,6 +77,34 @@ class KEGGapiTest(unittest.TestCase):
         
         self.assertEqual(set(itemlist), set(test_genes))
         self.assertEqual(set(descriptionlist), set(test_descriptions))
+        
+    @patch('requests.get', side_effect = mocked_requests_get)
+    def test_download_textfile_file_doesnt_exist(self, mockedget):
+        text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
+        self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing", force_download = True), text)
+        
+    def test_download_textfile_file_exists(self):
+        filepath = os.path.join(kgapi.download_dir, "textfile_testing")
+        text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
+        try:
+            os.remove(filepath)
+        except OSError:
+            #file already exists
+            pass
+        
+        with open(filepath, "w+") as textfile:
+            textfile.write(text)
+        
+        self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing"),text)
+        
+    @patch('requests.get', side_effect = mocked_requests_get)
+    def test_download_textfile_raise_error_if_newline(self, mockrequest):
+        
+        with self.assertRaises(kgerrors.KEGGInvalidFileContent):
+            kgapi.download_textfile(url =  "http://rest.kegg.jp/returninvalidtext", filename = "textfile_testing", force_download = True)
+    
+    
+        
         
         
         
