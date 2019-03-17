@@ -1,11 +1,10 @@
 import os, glob, json, requests, shutil
-import networkx as nx
 import imghdr
 import matplotlib.image as mpimg
 import matplotlib.pylab as plt
 
-from KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
-from KEGGhelpers import push_backslash
+from .KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
+from .KEGGhelpers import push_backslash
 
 download_dir = "./kegg_downloads/"
 
@@ -103,6 +102,12 @@ def delete_cached_files():
 # =============================================================================
 # DOWNLOADS
 # =============================================================================
+
+def is_kegg_up():
+    """Sends a simple HTTP requests to see if KEGG is currently reachable"""
+    
+    resp = requests.head('http://rest.kegg.jp/info/kegg')
+    return resp.status_code == 200
 
 # > URL REQUESTS
 def request_image(url, fpath):
