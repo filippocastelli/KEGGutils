@@ -1,9 +1,9 @@
 import networkx as nx
 import matplotlib.pylab as plt
 
-from KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
-from KEGGhelpers import replace_dict_value
-from KEGGapi import keggapi_link
+from .KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
+from .KEGGhelpers import replace_dict_value
+from .KEGGapi import keggapi_link
 
 # =============================================================================
 # GRAPH OPERATIONS
@@ -171,13 +171,13 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
     """Neighbor Subgraph
     
     Given a Graph and a node list returns the subgraph generated with the nodes
-    in the node list, the first neighbors of those nodes, and the edges between
+    in the node dict, the first neighbors of those nodes, and the edges between
     them
     
     
     Parameters:
         :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
-        :nodelist (list): list of nodes for the nighbor graph
+        :node_dict (dict): dict of input nodes
         :name (str): optional, name of the graph
         
     Returns:
