@@ -51,7 +51,7 @@ class KEGGKeyError(KEGGOnlineError):
             msg = "Invalid KEGG key: {}".format(self.key)
         super(KEGGKeyError, self).__init__(msg)
         
-class KEGGInvalidFileContent(KEGGOnlineError):
+class KEGGInvalidFileContent(Exception):
     def __init__(self, file, content, msg=None):
         
         self.file = file
