@@ -2,6 +2,8 @@ import os, glob, json, requests, shutil
 import imghdr
 import matplotlib.image as mpimg
 import matplotlib.pylab as plt
+import logging
+
 
 from .KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
 from .KEGGhelpers import push_backslash
@@ -63,10 +65,11 @@ def msg_end_download(filename, verbose = True):
     if verbose == True:
         print("succesfully downloaded {}".format(filename))
         
-def msg_file_already_exists(filename, download_dir, verbose):
+def msg_file_already_exists(filename, download_dir, verbose= True):
     if verbose == True:
-        print("> File {} already present in {}".format(filename, download_dir))
-        print("reading from cached file...")
+        logging.warning("> File {} already present in {}\nreading from chached file...".format(filename, download_dir))
+#        print("> File {} already present in {}".format(filename, download_dir))
+#        print("reading from cached file...")
 
 
 

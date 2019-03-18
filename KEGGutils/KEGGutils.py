@@ -1,9 +1,12 @@
 import networkx as nx
 import matplotlib.pylab as plt
+import logging 
+logging.basicConfig(level=logging.WARNING)
 
 from .KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
 from .KEGGhelpers import replace_dict_value
 from .KEGGapi import keggapi_link
+
 
 # =============================================================================
 # GRAPH OPERATIONS
@@ -321,7 +324,8 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False):
     }
 
     if layout not in layouts:
-        print("layout {} not valid: using {} layout".format(layout, default_layout))
+        logging.warning("layout {} not valid: using {} layout\nusing default layout".format(layout, default_layout))
+#        print("layout {} not valid: using {} layout".format(layout, default_layout))
         layout = default_layout
 
     plt.figure()
