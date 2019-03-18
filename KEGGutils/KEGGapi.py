@@ -5,8 +5,8 @@ import matplotlib.pylab as plt
 import logging
 
 
-from .KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
-from .KEGGhelpers import push_backslash
+from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
+from KEGGutils.KEGGhelpers import push_backslash
 
 download_dir = "./kegg_downloads/"
 
