@@ -1,11 +1,11 @@
 import networkx as nx
 import matplotlib.pylab as plt
 import logging 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
-from .KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
-from .KEGGhelpers import replace_dict_value
-from .KEGGapi import keggapi_link
+from KEGGutils.KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
+from KEGGutils.KEGGhelpers import replace_dict_value
+from KEGGutils.KEGGapi import keggapi_link
 
 
 # =============================================================================
