@@ -3,6 +3,8 @@ import imghdr
 import matplotlib.image as mpimg
 import matplotlib.pylab as plt
 import logging
+import xml.etree.ElementTree as et
+
 from slugify import slugify
 
 
@@ -290,6 +292,48 @@ def download_pic(url, filename, force_download = False, verbose = False):
                 FileNotFoundError
     return img
 
+def download_xml(url, filename, force_download=False, verbose=True):
+    """ Downloads a KGML xml file
+    
+    Parameters
+    ----------
+    url : str
+        url for the requests
+    filename : str
+        desired filename
+    force_download : bool, optional
+            if True replaces any previously downloaded file with the same name (the default is False)
+    verbose : bool, optional
+        displays additional messages (the default is True)
+    
+    Returns
+    -------
+    tree
+        XML tree
+    """
+    filename = slugify(filename)
+    
+    filepath = download_dir + filename
+    if (not file_exists(filename)) or force_download:
+        msg_start_download(filename, url, verbose)
+        
+        response = get_online_request(url)
+#        treebytes = response.content
+        treestr = response.text
+        tree =  et.ElementTree(et.fromstring(treestr))
+        
+        mkdir(download_dir)
+        
+        with open(filepath, "w+") as outfile:
+            outfile.write(treestr)
+            
+        msg_end_download(filename, verbose)
+        
+    else:
+        msg_file_already_exists(filename, download_dir, verbose)
+        tree = et.parse(filepath)
+            
+    return tree
 # =============================================================================
 # KEGG API COMMANDS
 # =============================================================================
@@ -441,6 +485,9 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         print("Infos on {} from KEGG:\n".format(dbentry))
         print(infos)
         return infos
+    elif option == "kgml":
+        tree = download_xml(url, filename, force_download=force_download, verbose = verbose)
+        return tree
     elif option == "json":
         json_data = download_json(url, filename, verbose = verbose)
         return json_data

@@ -5,6 +5,7 @@ import matplotlib.pylab as plt
 
 from KEGGutils import draw
 from KEGGutils.KEGGapi import keggapi_get
+from KEGGutils.KEGGerrors import KGMLerror
 
 
 class KEGGpathway(nx.DiGraph):
@@ -15,6 +16,11 @@ class KEGGpathway(nx.DiGraph):
     ----------
     kgml_file : str
         location of a KGML .xml file to parse
+    pathway_id (optional) : str
+        pathway id for downloading from KEGG
+    tree (optional) : xml tree
+            xml tree for the patway
+        
 
     Properties
     ----------
@@ -64,7 +70,9 @@ class KEGGpathway(nx.DiGraph):
     KEGGpathway.parse_kgml(kgml_file):
         parses a kgml file
     KEGGpathway.draw():
-        Plots the pathway with networkx.draw_networkx() (note: KGML file format is missing lot of additional information, for visualization purposes is reccomended to use downloaded kegg images)
+        Plots the pathway with networkx.draw_networkx() (note: KGML file format\
+        is missing lot of additional information, for visualization purposes is\
+        reccomended to use downloaded kegg images)
     KEGGpathway.download_img():
         Downloads the pathway visualization from KEGG and returns it
     KEGGpathway.list_by_nodetype(nodetype):
@@ -110,11 +118,20 @@ class KEGGpathway(nx.DiGraph):
 
         if "kgml_file" in kwargs:
             self.kgml_file = kwargs.pop("kgml_file")
+        if "tree" in kwargs:
+            self.tree = kwargs.pop("tree")
+        if "pathway_id" in kwargs:
+            path_id = kwargs.pop("pathway_id")
 
         super().__init__(self, *args, **kwargs)
+        
+        self.name = path_id
 
-        if self.kgml_file is not None:
-            self.parse_kgml(self.kgml_file)
+        if (self.kgml_file is not None) or (self.name is not None) or (self.tree is not None):
+            if self.name is not None:
+                logging.debug("Downloading {} XML tree from KEGG".format(self.name))
+                self.tree = keggapi_get(dbentry = self.name, option = "kgml")
+            self.parse_kgml(self.kgml_file, self.tree)
 
     # =============================================================================
     # PUBLIC METHODS
@@ -132,19 +149,33 @@ class KEGGpathway(nx.DiGraph):
 
         return self.pos
 
-    def parse_kgml(self, kgml_file):
+    def parse_kgml(self, kgml_file = None, tree = None):
         """parse_kgml parses a kgml .xml file
         
         Parameters
         ----------
-        kgml_file : str
+        kgml_file (optional) : str
             path to .xml file
+        tree (optional) : xml tree
+            xml tree for the patway
+            
+        Note
+        ----
+            Must provide either kgml_file OR tree OR pathway_id, can't use more than one
         
         """
-
-        tree = et.parse(kgml_file)
+        if (kgml_file is None) and (tree is None):
+            raise KGMLerror(kgml_file, tree, msg = "Either a kgml file path of a XML tree is needed for parsing")
+        if (kgml_file is not None) and (tree is not None):
+            raise KGMLerror(kgml_file, tree, msg = "Cannot parse from both {} tree and {} file".format(kgml_file, tree))
+        
+        if kgml_file is not None:
+            logging.debug("Reading xml tree from file {}".format(kgml_file))
+            tree = et.parse(kgml_file)
+        
         self.tree = tree
-
+        
+        
         self.title = tree.getroot().get("title")
         self.name = tree.getroot().get("name")
         self.idcode = tree.getroot().get("id")

@@ -62,3 +62,13 @@ class KEGGInvalidFileContent(Exception):
             
         super(KEGGInvalidFileContent, self).__init__(msg)
         
+class KGMLerror(Exception):
+    def __init__(self, xml_file = None, tree = None, msg=None):
+            
+        self.xml_file = xml_file
+        self.tree = tree
+
+        if msg is None:
+            msg = "Invalid tree {} in xml file {}".format(self.tree, self.xml_file)
+            
+        super(KGMLerror, self).__init__(msg)
