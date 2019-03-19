@@ -43,7 +43,7 @@ class KEGGOnlineError(Exception):
         super(KEGGOnlineError, self).__init__(msg)
 
 
-class KEGGKeyError(KEGGOnlineError):
+class KEGGKeyError(Exception):
     def __init__(self, key, msg=None):
         self.key = key
 
