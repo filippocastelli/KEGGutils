@@ -3,10 +3,12 @@ import imghdr
 import matplotlib.image as mpimg
 import matplotlib.pylab as plt
 import logging
+from slugify import slugify
 
 
 from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
 from KEGGutils.KEGGhelpers import push_backslash
+
 
 download_dir = "./kegg_downloads/"
 
@@ -176,6 +178,8 @@ def download_textfile(url, filename, force_download=False, verbose=True):
         text [str] -- downloaded text
     """
 
+    filename = slugify(filename)
+    
     filepath = download_dir + filename
     if (not file_exists(filename)) or force_download:
         msg_start_download(filename, url, verbose)
@@ -218,7 +222,8 @@ def download_json(url, filename, force_download=False, verbose=True):
     json
         json data
     """
-
+    filename = slugify(filename)
+    
     filepath = download_dir + filename
     if (not file_exists(filename)) or force_download:
         msg_start_download(filename, url, verbose)
@@ -259,7 +264,7 @@ def download_pic(url, filename, force_download = False, verbose = False):
         img data stream
     """
 
-    
+    filename = slugify(filename)
     possible_filenames = {'gif': filename + '.gif', 
                        'png': filename + '.png'}
 
@@ -393,7 +398,7 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
         return itemlist, descriptionlist
     
     
-def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = True, force_download = False):
+def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = True, force_download = False, show_result_image = True):
     """Interface for the KEGG API GET command
 
     for further info read https://www.kegg.jp/kegg/rest/keggapi.html
@@ -410,6 +415,8 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         is True displays additional messages  (the default is True)
     force_download : bool, optional
         if set to True replaces any file under the same filename (the default is False)
+    show_result_image: boo, optional
+        if set to True shows the downloaded image (the default is True)
     """
 
     
@@ -443,17 +450,19 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         return text
     elif option == "image":
         img = download_pic(url, filename, verbose = True)
-        plt.imshow(img)
-        
+        if show_result_image:
+            plt.imshow(img)
         return img
-    
-    if want_descriptions == False:
-        itemlist = process_request_text(text, want_descr=want_descriptions)
-        return itemlist
-    elif want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(text, want_descr=want_descriptions)
-        assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
-        return itemlist, descriptionlist
+    elif option == "kgml":
+        raise NotImplementedError
+#    
+#    if want_descriptions == False:
+#        itemlist = process_request_text(text, want_descr=want_descriptions)
+#        return itemlist
+#    elif want_descriptions == True:
+#        itemlist, descriptionlist = process_request_text(text, want_descr=want_descriptions)
+#        assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
+#        return itemlist, descriptionlist
     
 def keggapi_link(source, target, verbose = True, force_download = False):
     """Interface for the KEGG API LINK command 
