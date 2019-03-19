@@ -1,10 +1,11 @@
 import networkx as nx
 import matplotlib.pylab as plt
+from matplotlib import colors as mplcolors
 import logging 
 logging.basicConfig(level=logging.DEBUG)
 
 from KEGGutils.KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
-from KEGGutils.KEGGhelpers import replace_dict_value
+from KEGGutils.KEGGhelpers import replace_dict_value, shift_pos, shorten_labels
 from KEGGutils.KEGGapi import keggapi_link
 
 
@@ -280,7 +281,8 @@ def graph_measures(graph):
 # =============================================================================
 # PLOTTING
 # =============================================================================
-def draw(graph, title=None, layout=None, filename=None, return_ax=False):
+def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = None,
+         font_size = 9,  alpha = 1.0, label_shift = (-15, 4), truncate_labels = 10):
     """Graph drawing made a bit easier
     
     Parameters:
@@ -300,19 +302,24 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False):
     default_layout = "spring_layout"
     if layout is None:
         layout = default_layout
-
+        
+    node_groups = {}
+    
     graph_nodetypes = get_unique_nodetypes(graph)
-
-    nodetypes_dict = nx.get_node_attributes(graph, "nodetype")
-
-    if len(graph_nodetypes) == 1:
-        graph_nodetypes = graph_nodetypes * 2
-
-    graph_colors = replace_dict_value(nodetypes_dict, graph_nodetypes[0], "b")
-    graph_colors = replace_dict_value(graph_colors, graph_nodetypes[1], "r")
-
+    
+    base_colors = list(mplcolors.BASE_COLORS.keys())
+    
+    for i, nodetype in enumerate(graph_nodetypes):
+        node_group = (get_nodes_by_nodetype(graph, nodetype).keys())
+        node_groups.update({nodetype: (node_group, base_colors[i])})
+        
     if title is None:
-        title = "{} > {} graph".format(graph_nodetypes[1], graph_nodetypes[0])
+        if len(graph_nodetypes) == 1:
+            title = "{} graph".format(graph_nodetypes[0])
+        if len(graph_nodetypes) == 2:
+            title = "{} > {} graph".format(graph_nodetypes[1], graph_nodetypes[0])
+        else:
+            title = "Graph plot"
 
     layouts = {
         "circular_layout": nx.circular_layout,
@@ -325,17 +332,35 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False):
 
     if layout not in layouts:
         logging.warning("layout {} not valid: using {} layout\nusing default layout".format(layout, default_layout))
-#        print("layout {} not valid: using {} layout".format(layout, default_layout))
         layout = default_layout
 
-    plt.figure()
+    plt.figure()    
+    
+    if pos is None:
+        pos = layouts[layout](graph)
 
-    pos = layouts[layout](graph)
-
-    nx.draw_networkx_nodes(graph, pos, node_color=list(graph_colors.values()))
+    for nodetype, node_group in node_groups.items():
+        nx.draw_networkx(graph, nodelist = node_group[0], pos = pos, node_color = node_group[1], with_labels = False, label = nodetype)
+        
     nx.draw_networkx_edges(graph, pos)
-    nx.draw_networkx_labels(graph, pos)
-
+    pos_labels = shift_pos(pos, label_shift)
+    
+    candidate_labels = nx.get_node_attributes(graph, "label")
+    
+    if candidate_labels != {}:
+        if truncate_labels != False:
+            labels = shorten_labels(candidate_labels, truncate_labels)
+        else:
+            labels = candidate_labels
+    else:
+        labels = None
+    
+    nx.draw_networkx_labels(graph, pos_labels,
+                            labels = labels,
+                            font_size = font_size,
+                            alpha = alpha)
+    
+    plt.legend()
     if title is not None:
         plt.title(title)
 
