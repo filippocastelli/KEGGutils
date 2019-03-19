@@ -1,7 +1,10 @@
 import networkx as nx
 import xml.etree.ElementTree as et
 import logging
+import matplotlib.pylab as plt
 
+from KEGGutils import draw
+from KEGGutils.KEGGapi import keggapi_get
 
 class KEGGpathway(nx.DiGraph):
     
@@ -15,6 +18,7 @@ class KEGGpathway(nx.DiGraph):
     genelist = []
     tree = None
     kgml_file = None
+    kegg_image = []
     
     def __init__(self, *args, **kwargs):
         
@@ -35,7 +39,8 @@ class KEGGpathway(nx.DiGraph):
         
         if self.kgml_file is not None:
             self.parse_kgml(self.kgml_file)
-        
+            
+  
     def calc_pos(self): 
         for n in self.nodes():
             self.pos.update({n: self.node[n]['xy']})
@@ -74,12 +79,25 @@ class KEGGpathway(nx.DiGraph):
             
         node_title = g_name if g_name is not None else node_name
         self.labels[node_id] = node_title
-        self.nodedict[node_id] = (node_name, node_title, node_type)
+        
         
         xy = (g_x, g_y) if ((g_x is not None) and (g_y is not None)) else None
         
-        self.add_node(node_id, label= node_title, nodetype = node_type, xy = xy,
+        
+        nodes_to_add = node_name.split()
+        for i, node in enumerate(nodes_to_add):
+            node_index = node_id
+            if i > 1:
+                node_index = node_id + "_" + str(i-1)
+                
+            xy = (g_x- 10*i, 10*i + g_y) if ((g_x is not None) and (g_y is not None)) else None
+            self.add_node(node_index, name = node, label= node_title, nodetype = node_type, xy = xy,
                       kegglink = node_kegglink, component_id = component_id)
+            
+            self.nodedict[node_index] = (node, node_title, node_type)
+        
+        
+
     
     def _parse_reaction(self, reaction):
         reaction_id = reaction.get("id")
@@ -125,6 +143,19 @@ class KEGGpathway(nx.DiGraph):
         
         self.relations[relation_entry1+"_"+relation_entry2] = relation
         
+        
+        all_entry1 = [i for i in list(self.nodes) if i.startswith(relation_entry1+"_")]
+        all_entry1.insert(0,relation_entry1)
+        all_entry2 = [i for i in list(self.nodes) if i.startswith(relation_entry2+"_")]
+        all_entry2.insert(0,relation_entry2)
+        
+        for e1 in all_entry1:
+            for e2 in all_entry2:
+                self.add_edge(e1, e2, relation_type = relation_type, subtypes = subtypes)
+                self.relations[e1+"_"+e2] = (self.node[e1]['name'], self.node[e2]['name'])
+            
+            
+        
     def parse_kgml(self, kgml_file):
         
         tree = et.parse(kgml_file)
@@ -142,6 +173,17 @@ class KEGGpathway(nx.DiGraph):
             self._parse_reaction(reaction)
 
         self.calc_pos()
+    
+    def draw(self):
+        draw(graph = self, title = self.title, pos = self.pos)
+    
+    def kegg_image(self):
+        self.kegg_image = keggapi_get(dbentry = self.name, option = "image", show_result_image = False)
+        plt.figure()
+        plt.title(self.title)
+        plt.imshow(self.kegg_image)
         
+        
+    
 
         
