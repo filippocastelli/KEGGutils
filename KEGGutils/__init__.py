@@ -22,4 +22,5 @@ from .KEGGutils import (
         graph_measures,
         draw)
 
+from .KEGGpathway import KEGGpathway
 __version__ = "0.1.4"
