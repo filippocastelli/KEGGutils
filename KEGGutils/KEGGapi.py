@@ -282,7 +282,10 @@ def download_pic(url, filename, force_download = False, verbose = False):
         
         assert img_format in ["gif", "png"], "Image format is wrong, something funny is happening in decoding probably"
         
-        os.rename(tmp_path, get_fname_path(filename)+"."+img_format)
+        path = get_fname_path(filename)+"."+img_format
+        os.rename(tmp_path, path)
+        
+        img = mpimg.imread(path)
         
     else:
         for imgformat in ["gif", "png"]:
@@ -419,7 +422,7 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
     
     options = ["formula", "exact_mass", "mol_weight"]
     
-    if database not in db_categories:
+    if database not in db_categories + ["genes"]:
         raise KEGGKeyError(database)
         
     if (database == "compound" or database == "drug") & (option is not None) & (option not in options):
@@ -442,7 +445,7 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
         return itemlist, descriptionlist
     
     
-def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = True, force_download = False, show_result_image = True):
+def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = False, force_download = False, show_result_image = True):
     """Interface for the KEGG API GET command
 
     for further info read https://www.kegg.jp/kegg/rest/keggapi.html
@@ -473,7 +476,7 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
     
     url = "http://rest.kegg.jp/get/{}{}".format(dbentry, optionurl)
     
-    if option == None:
+    if option == "":
         option = "description"
 
     filename = dbentry + "_" + option
@@ -484,17 +487,25 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
             infos = "\n".join(infos.splitlines()[1:4])
         print("Infos on {} from KEGG:\n".format(dbentry))
         print(infos)
-        return infos
+        return
     elif option == "kgml":
         tree = download_xml(url, filename, force_download=force_download, verbose = verbose)
         return tree
     elif option == "json":
         json_data = download_json(url, filename, verbose = verbose)
         return json_data
-    elif option in ["mol", "kcf", "conf", "aaseq", "ntseq"]:
+    elif option in ["mol", "kcf", "conf", "ntseq"]:
         text = download_textfile(url, filename, verbose = verbose, force_download = force_download)
         print(text)
         return text
+    elif option == "aaseq":
+        text = download_textfile(url, filename, verbose = True, force_download = force_download)
+        description = text.splitlines()[0]
+        sequence = "".join(text.splitlines()[1:])
+        if want_descriptions == True:
+            return description, sequence
+        else:
+            return sequence
     elif option == "image":
         img = download_pic(url, filename, verbose = True)
         if show_result_image:
@@ -502,14 +513,9 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Tru
         return img
     elif option == "kgml":
         raise NotImplementedError
-#    
-#    if want_descriptions == False:
-#        itemlist = process_request_text(text, want_descr=want_descriptions)
-#        return itemlist
-#    elif want_descriptions == True:
-#        itemlist, descriptionlist = process_request_text(text, want_descr=want_descriptions)
-#        assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
-#        return itemlist, descriptionlist
+    else:
+        raise KEGGKeyError(key = dbentry, msg = "KEGG GET API request not recognized")
+
     
 def keggapi_link(source, target, verbose = True, force_download = False):
     """Interface for the KEGG API LINK command 
@@ -552,8 +558,89 @@ def keggapi_link(source, target, verbose = True, force_download = False):
     
     
     return link1, link2
+
+def keggapi_conv(source, target, verbose = True, force_download = False):
+    
+    org = get_organism_codes() + ["genes"]
+    kegg_db = None
+    outside_db = None
+    keggdblist = ["compound", "glycan", "drug"]
+    outsidedb1 = ["ncbi-geneid", "ncbi-proteinid", "uniprot"]
+    outsidedb2 = ["pubchem", "chebi"]
+    outsidedblist = outsidedb1 + outsidedb2
+    
+    
+    #CHECK IF ARGUMENTS ARE VALID
+    for entry in [source, target]:
+        if entry in org + keggdblist:
+            kegg_db = entry
+        elif entry in outsidedblist:
+            outside_db = entry
+    
+    if (kegg_db is None) ^ (outside_db is None):
+        #second mode, source is a dbentry
+        if target not in org + keggdblist + outsidedblist:
+            raise KEGGKeyError(key = target)
+        #further checks to implement
+    else:
+        if kegg_db in org:
+            if outside_db not in outsidedb1:
+                raise KEGGKeyError(key = outside_db)
+        elif kegg_db in keggdblist:
+            if outside_db not in outsidedb2:
+                raise KEGGKeyError(key = outside_db)
+        else:
+            raise KEGGKeyError(key = kegg_db)
+
+
+    url = "http://rest.kegg.jp/conv/{}/{}".format(target, source)
+    
+    filename = target + "_" + source + "_conv"
+    
+    text = download_textfile(url, filename, force_download = force_download)
+    
+    codes1, codes2 = process_request_text(text, want_descr = True)
+    
+    return codes1, codes2
+        
+
+
+def keggapi_info(database, verbose = True, force_download = False):
+
+    if database not in db_categories:
+        raise KEGGKeyError(database, msg = "source database {} is not a valid database".format(database))
+        
+    url = "http://rest.kegg.jp/info/{}".format(database)
+    
+    filename = database+"_info"
+    
+    infos = download_textfile(url, filename, verbose=False)
+    if verbose == False:
+        infos = "\n".join(infos.splitlines()[1:4])
+
+    print("Infos on {} from KEGG:\n".format(database))
+    print(infos)
+    
+    
+def keggapi_ddi(dbentry, verbose = True, force_download = False):
+        
+    url = "http://rest.kegg.jp/ddi/{}".format(dbentry)
+    
+    filename = dbentry+"_ddi"
+    
+    text = download_textfile(url, filename, verbose=False)
+
+    ddi_list = []
+    
+    for line in text.splitlines():
+        drug1, drug2, ddi_code, interaction = line.strip().split("\t")
+        ddi_list.append((drug1, drug2, ddi_code, interaction))
+        
+    return ddi_list
+    
     
 
+    
 # =============================================================================
 # KEGGAPI DERIVATE FUNCTIONS
 # =============================================================================
