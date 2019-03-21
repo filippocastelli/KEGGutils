@@ -518,30 +518,33 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Fal
 
     
 def keggapi_link(source, target, verbose = True, force_download = False):
-    """Interface for the KEGG API LINK command 
-
-    for further info see 
+    """Interface for the KEGG REST API LINK command 
+    Given two different database names returns the linked relations between them
+    
+    for further info read https://www.kegg.jp/kegg/rest/keggapi.html
     
     Parameters
     ----------
-    source : [type]
-        [description]
-    target : [type]
-        [description]
+    source : str
+        source database name
+    target : str
+        target database name
     verbose : bool, optional
-        [description] (the default is True, which [default_description])
+        displays additional infos during the download (the default is True)
     force_download : bool, optional
-        [description] (the default is False, which [default_description])
+        forces overwriting over cached files (the default is False)
     
     Raises
     ------
     KEGGKeyError
-        [description]
+        if a database key is invalid
     
     Returns
     -------
-    [type]
-        [description]
+    link1 : list
+        list of source nodes
+    link2 : list
+        list of target nodes
     """
 
     
@@ -560,6 +563,33 @@ def keggapi_link(source, target, verbose = True, force_download = False):
     return link1, link2
 
 def keggapi_conv(source, target, verbose = True, force_download = False):
+    """ KEGG REST API interface to CONV command
+    Converts KEGG codes to and from NCBI ProteinID, NCBI GeneID, Uniprot, CHEBI\
+    and PubChem name standards
+    
+    for further info read https://www.kegg.jp/kegg/rest/keggapi.html
+    
+    Parameters
+    ----------
+    
+    source str :
+        source database or dbentry
+    target str :
+        target database or dbentry
+    verbose bool : 
+        if set to True displays additional messages (defaultis True)
+    force_download bool: 
+        forces overwriting cached files (default is False)
+        
+    Returns
+    -------
+    
+    source_codes : list
+        list of codes in the original database format
+    target_codes : list
+        list of codes in the target database format
+    
+    """
     
     org = get_organism_codes() + ["genes"]
     kegg_db = None
@@ -606,8 +636,23 @@ def keggapi_conv(source, target, verbose = True, force_download = False):
 
 
 def keggapi_info(database, verbose = True, force_download = False):
-
-    if database not in db_categories:
+    """KEGG REST API interface for INFO command
+    Displays information on a given database
+    
+    for further info read https://www.kegg.jp/kegg/rest/keggapi.html
+    
+    Parameters
+    ----------
+    database : str
+        database of which you want to obtain infos on
+    verbose : bool
+        if set to False displays only the first 4 lines of text (default is True)
+    force_download :  bool
+        forces overwriting on previous cached files (default is False)
+    """
+    org = get_organism_codes()
+    
+    if database not in db_categories + org:
         raise KEGGKeyError(database, msg = "source database {} is not a valid database".format(database))
         
     url = "http://rest.kegg.jp/info/{}".format(database)
@@ -622,7 +667,21 @@ def keggapi_info(database, verbose = True, force_download = False):
     print(infos)
     
     
-def keggapi_ddi(dbentry, verbose = True, force_download = False):
+def keggapi_ddi(dbentry, force_download = False):
+    """KEGG REST API interface for the DDI command
+    lists drug-drug interactions for a given compound name
+    
+    Parameters
+    ----------
+    
+    dbentry : str
+        drug KEGG database entry
+    force_download : bools
+        forces overwriting over cached files (default is False)
+        
+    for further info read https://www.kegg.jp/kegg/rest/keggapi.html"""
+    
+    
         
     url = "http://rest.kegg.jp/ddi/{}".format(dbentry)
     
