@@ -2,7 +2,7 @@ import networkx as nx
 import matplotlib.pylab as plt
 from matplotlib import colors as mplcolors
 import logging 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 from KEGGutils.KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
 from KEGGutils.KEGGhelpers import replace_dict_value, shift_pos, shorten_labels
@@ -353,7 +353,9 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = N
         else:
             labels = candidate_labels
     else:
-        labels = None
+#        labels = None
+        nodelist = list(graph.nodes)
+        labels = dict(zip(nodelist, nodelist))
     
     nx.draw_networkx_labels(graph, pos_labels,
                             labels = labels,
