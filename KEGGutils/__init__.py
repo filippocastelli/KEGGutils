@@ -26,4 +26,7 @@ from .KEGGutils import (
         draw)
 
 from .KEGGpathway import KEGGpathway
+
+from .KEGGgraph import (KEGGgraph,
+                        KEGGlinkgraph)
 __version__ = "0.1.4"

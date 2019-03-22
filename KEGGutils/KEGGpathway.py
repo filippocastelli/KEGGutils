@@ -6,9 +6,10 @@ import matplotlib.pylab as plt
 from KEGGutils import draw
 from KEGGutils.KEGGapi import keggapi_get
 from KEGGutils.KEGGerrors import KGMLerror
+from KEGGutils.KEGGgraph import KEGGgraph
+ 
 
-
-class KEGGpathway(nx.DiGraph):
+class KEGGpathway(KEGGgraph):
     """KEGG Pathway:
     Extends the NetworkX.DiGraph(), includes a parser to read KGML .xml files 
     
@@ -123,7 +124,7 @@ class KEGGpathway(nx.DiGraph):
         if "pathway_id" in kwargs:
             path_id = kwargs.pop("pathway_id")
 
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         self.name = path_id
 
@@ -192,7 +193,6 @@ class KEGGpathway(nx.DiGraph):
     def draw(self):
         """draws the pathway graph with networkx.networkx_draw()
         """
-
         draw(graph=self, title=self.title, pos=self.pos)
 
     def download_img(self):
@@ -236,33 +236,33 @@ class KEGGpathway(nx.DiGraph):
     # =============================================================================
     # PRIVATE METHODS
     # =============================================================================
-    def _find_arg_and_kick(self, args, to_find):
-        """finds an arg in args using to_find as a substring
+    # def _find_arg_and_kick(self, args, to_find):
+    #     """finds an arg in args using to_find as a substring
         
-        Parameters
-        ----------
-        args : list
-            list of args
-        to_find : str
-            substring to identify the argument
+    #     Parameters
+    #     ----------
+    #     args : list
+    #         list of args
+    #     to_find : str
+    #         substring to identify the argument
         
-        Returns
-        -------
-        arg: str
-            found argument
-        newargs: list
-            list of arguments without arg
-        """
+    #     Returns
+    #     -------
+    #     arg: str
+    #         found argument
+    #     newargs: list
+    #         list of arguments without arg
+    #     """
 
-        for arg in args:
-            if type(arg) == str:
-                if arg.find(to_find) != -1:
-                    logging.debug("found {} in args".format(arg))
+    #     for arg in args:
+    #         if type(arg) == str:
+    #             if arg.find(to_find) != -1:
+    #                 logging.debug("found {} in args".format(arg))
 
-                    newargs = [argument for argument in args if argument != arg]
-                    args = newargs
+    #                 newargs = [argument for argument in args if argument != arg]
+    #                 args = newargs
 
-                    return arg, newargs
+    #                 return arg, newargs
 
     def _parse_graphics(self, graphics):
         """parses graphics
