@@ -9,8 +9,10 @@ sys.path.insert(0,parentdir)
 
 import KEGGutils.KEGGutils as kgu
 
+from KEGGutils.KEGGgraph import KEGGlinkgraph
+
 hsa_nodes = ['hsa:9344', 'hsa:5894', 'hsa:673', 'hsa:5607']
-enzyme_nodes = ['ec:2.7.11.1', 'ec:2.7.11.1', 'ec:2.7.11.1', 'ec:2.7.12.2']
+enzyme_nodes = ['ec:2.7.8.2', 'ec:3.4.23.3', 'ec:2.3.3.10', 'ec:6.4.1.2']
 
 testgraph = nx.Graph()
 testgraph.add_nodes_from(hsa_nodes, nodetype = "hsa")
@@ -19,7 +21,16 @@ testgraph.add_edge(hsa_nodes[0], enzyme_nodes[0])
 
 
 class KEGGutilsTest(unittest.TestCase):
+    
+    @patch('KEGGutils.KEGGutils.keggapi_link')
+    def test_kegg_link_graph_returns_bipartite_graphs(self, mocker):
 
+        mocker.return_value = [hsa_nodes, enzyme_nodes]
+        
+        graph = kgu.kegg_link_graph("hsa", "enzyme")
+        
+        self.assertEqual(len(hsa_nodes) + len(enzyme_nodes), len(graph.nodes), "Not all nodes are being copied")
+    
     @patch('KEGGutils.KEGGutils.keggapi_link')
     def test_kegg_link_graph_returns_bipartite_graphs(self, mocker):
 
@@ -53,5 +64,3 @@ class KEGGutilsTest(unittest.TestCase):
     
     def test_neighbor_graph_edges(self):
         self.assertEqual(set(list(kgu.neighbor_graph(testgraph, {hsa_nodes[0]: 'hsa'}).edges)[0]), set([hsa_nodes[0], enzyme_nodes[0]]))
-        
-    
