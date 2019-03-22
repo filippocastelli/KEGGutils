@@ -11,3 +11,5 @@ build
 source
 .ipynb_checkpoints
 kegg_downloads
+
+tests/test_files_dir/*

@@ -23,7 +23,7 @@ setup(
     keywords = "KEGG networkx utils",
     url = "https://github.com/filippocastelli/KEGGutils",
     packages=['KEGGutils'],
-    install_requires=['networkx', 'requests', 'matplotlib'],
+    install_requires=['networkx', 'requests', 'matplotlib', 'awesome-slugify'],
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
