@@ -8,7 +8,6 @@ from KEGGutils.KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProj
 from KEGGutils.KEGGhelpers import replace_dict_value, shift_pos, shorten_labels
 from KEGGutils.KEGGapi import keggapi_link
 
-
 # =============================================================================
 # GRAPH OPERATIONS
 # =============================================================================
@@ -61,15 +60,13 @@ def populate_graph(graph, nodes_1, nodes_2, nodetype1, nodetype2):
         second nodetype
     
     """
-
-
     for i, nodo in enumerate(nodes_1):
-        graph.add_node(nodo, nodetype=nodetype1)
-        graph.add_node(nodes_2[i], nodetype=nodetype2)
+        graph.add_node(nodo, nodetype=nodetype1, label = nodetype1)
+        graph.add_node(nodes_2[i], nodetype=nodetype2, label = nodetype2)
         graph.add_edge(nodo, nodes_2[i])
 
 def has_nodetypes(graph):
-    """Populates a pre-existing Graph given two list of nodes and two node labels
+    """Determines if graph nodes have the "nodetype" attribute
     
     Parameters:
         :graph (Graph): input graph
