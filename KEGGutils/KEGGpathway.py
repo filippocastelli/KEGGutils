@@ -193,7 +193,7 @@ class KEGGpathway(KEGGgraph):
     def draw(self):
         """draws the pathway graph with networkx.networkx_draw()
         """
-        draw(graph=self, title=self.title, pos=self.pos)
+        draw(graph=self, title=self.title, pos=self.pos, label_shift = (-15,4))
 
     def download_img(self):
         """downloads the KEGG picture of the pathway

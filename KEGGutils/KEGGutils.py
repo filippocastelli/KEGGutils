@@ -61,8 +61,8 @@ def populate_graph(graph, nodes_1, nodes_2, nodetype1, nodetype2):
     
     """
     for i, nodo in enumerate(nodes_1):
-        graph.add_node(nodo, nodetype=nodetype1, label = nodetype1)
-        graph.add_node(nodes_2[i], nodetype=nodetype2, label = nodetype2)
+        graph.add_node(nodo, nodetype=nodetype1, label = nodo)
+        graph.add_node(nodes_2[i], nodetype=nodetype2, label = nodes_2[i])
         graph.add_edge(nodo, nodes_2[i])
 
 def has_nodetypes(graph):
@@ -212,7 +212,7 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
         difference_set = input_nodes_set - set(neighbor_graph.nodes)
 
         for node in difference_set:
-            neighbor_graph.add_node(node, nodetype=node_dict[node])
+            neighbor_graph.add_node(node, nodetype=node_dict[node], label = node)
 
     if name is None:
         name = "neighbor_graph_of_{}".format(graph.name)
@@ -251,7 +251,7 @@ def projected_graph(graph, nodelist, multigraph=False, name=None):
 
     for dis_node in disjoint_nodes:
 
-        projected_graph.add_node(dis_node, nodetype=nodetype)
+        projected_graph.add_node(dis_node, nodetype=nodetype, label = dis_node)
 
     if name == None:
         name = "{}_projected".format(graph.name)
@@ -279,7 +279,7 @@ def graph_measures(graph):
 # PLOTTING
 # =============================================================================
 def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = None,
-         font_size = 9,  alpha = 1.0, label_shift = (-15, 4), truncate_labels = 10):
+         font_size = 9,  alpha = 1.0, label_shift = (0,0), truncate_labels = 10):
     """Graph drawing made a bit easier
     
     Parameters:
@@ -334,7 +334,11 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = N
     plt.figure()    
     
     if pos is None:
-        pos = layouts[layout](graph)
+        output_layout = layouts[layout](graph)
+        pos = {}
+        for key, value in output_layout.items():
+            pos[key] = tuple(value)
+            
 
     for nodetype, node_group in node_groups.items():
         nx.draw_networkx(graph, nodelist = node_group[0], pos = pos, node_color = node_group[1], with_labels = False, label = nodetype)
