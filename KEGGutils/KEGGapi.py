@@ -4,12 +4,24 @@ import matplotlib.image as mpimg
 import matplotlib.pylab as plt
 import logging
 import xml.etree.ElementTree as et
+import pkg_resources
+import pathlib
+
 
 from slugify import slugify
 
+RES_PATH = pkg_resources.resource_filename("KEGGutils", "res/")
+ORG_CODES = pkg_resources.resource_filename("KEGGutils", "res/org_codes.txt")
+
+CURRENT_DIR = pathlib.Path.cwd()
+DOWNLOAD_DIR = CURRENT_DIR.joinpath("kegg_downloads")
+
+DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
 from KEGGutils.KEGGhelpers import push_backslash
+
+# from KEGGutils.KEGGenums import KEGGoutside, KEGGorganisms, KEGGdatabases, KEGGmedicus
 
 
 download_dir = "./kegg_downloads/"
@@ -61,39 +73,29 @@ outside = ["pubmed", "ncbi-geneid", "ncbi-proteinid", "uniprot", "pubchem", "che
 # INTERFACE MESSAGES
 # =============================================================================
 
-def msg_start_download(filename, url, verbose = True):
-    if verbose == True:
-        print("> Downloading {} from KEGG at {}".format(filename, url))
-        
-def msg_end_download(filename, verbose = True):
-    if verbose == True:
-        print("succesfully downloaded {}".format(filename))
-        
-def msg_file_already_exists(filename, download_dir, verbose= True):
-    if verbose == True:
-        logging.warning("> File {} already present in {}\nreading from chached file...".format(filename, download_dir))
-#        print("> File {} already present in {}".format(filename, download_dir))
-#        print("reading from cached file...")
 
+def msg_start_download(filename, url, verbose=True):
+    if verbose == True:
+        logging.info("> Downloading %s from KEGG at %s",filename, url)
+
+
+def msg_end_download(filename, verbose=True):
+    if verbose == True:
+        logging.info("succesfully downloaded %s",filename)
+
+
+def msg_file_already_exists(filename, verbose=True):
+    if verbose == True:
+        logging.warning(
+            "> File %s already present in %s\nreading from chached file...",
+                filename, DOWNLOAD_DIR
+        )
 
 
 # =============================================================================
 # FILE MANAGEMENT
 # =============================================================================
-def file_exists(filename):
-    """Checks if file exists, accepts only filename"""
-    return os.path.isfile(get_fname_path(filename))
 
-def get_fname_path(filename):
-    """ Returns the complete path for a filename using download_dir"""
-    return download_dir+ filename
-
-def mkdir(directory):
-    """ Creates a directory if it doesn't already exsist"""
-    try:
-        os.mkdir(directory)
-    except FileExistsError:
-        pass
 
 def delete_cached_files():
     """Deletes all files in download_dir"""
@@ -106,28 +108,44 @@ def delete_cached_files():
         os.remove(file)
 
 
+def change_download_dir(newpath):
+    """ Changes download directory to the one specified in newpath"""
+    global DOWNLOAD_DIR
+    DOWNLOAD_DIR = pathlib.Path(newpath).absolute()
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+
+
+def get_download_dir():
+    """ Returns download directory path"""
+    global DOWNLOAD_DIR
+    return DOWNLOAD_DIR
+
+
 # =============================================================================
 # DOWNLOADS
 # =============================================================================
 
+
 def is_kegg_up():
     """Sends a simple HTTP requests to see if KEGG is currently reachable"""
-    
-    resp = requests.head('http://rest.kegg.jp/info/kegg')
-    
+
+    resp = requests.head("http://rest.kegg.jp/info/kegg")
+
     return resp.status_code == 200
+
 
 # > URL REQUESTS
 def request_image(url, fpath):
     """Creates a requets for url, saves the response in fpath, returns response.raw"""
-    response = requests.get(url, stream = True)
-    
+    response = requests.get(url, stream=True)
+
     if response.status_code == 200:
-        with open(fpath, 'wb') as out_file:
+        #        with open(fpath, 'wb') as out_file:
+        with fpath.open(mode="wb") as out_file:
             shutil.copyfileobj(response.raw, out_file)
     else:
         raise KEGGOnlineError
-        
+
     return response.status_code == 200
 
 
@@ -138,7 +156,8 @@ def get_online_request(url):
         raise KEGGOnlineError(request)
     return request
 
-def process_request_text(fulltext, want_descr = False):
+
+def process_request_text(fulltext, want_descr=False):
     """Preprocessing of item-description type text
     
     Separates couple of words in item \t description format
@@ -150,10 +169,10 @@ def process_request_text(fulltext, want_descr = False):
     
     Returns:
         itemlist, *descriptionlist (list): list of items and descriptions (optional)"""
-        
+
     itemlist = []
     descriptionlist = []
-    
+
     for line in fulltext.splitlines():
         entry, description = line.strip().split("\t")
         itemlist.append(entry)
@@ -179,31 +198,30 @@ def download_textfile(url, filename, force_download=False, verbose=True):
     Returns:
         text [str] -- downloaded text
     """
-
-    filename = slugify(filename)
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
     
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filename = slugify(filename)
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+
+    if (not filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
-        
+
         request = get_online_request(url)
         text = request.text
-        mkdir(download_dir)
-        
-        with open(filepath, "w+") as text_file:
-            text_file.write(text)
-            
+        filepath.write_text(text)
+
         msg_end_download(filename, verbose)
-        
+
     else:
-        msg_file_already_exists(filename, download_dir, verbose)
-        with open(filepath, "r") as read_file:
-            text = read_file.read()
-    
-    if text == '\n':
+        msg_file_already_exists(filename, verbose)
+
+        text = filepath.read_text()
+
+    if text == "\n":
         raise KEGGInvalidFileContent(filename, text)
-        
+
     return text
+
 
 def download_json(url, filename, force_download=False, verbose=True):
     """ Downloads a json file
@@ -224,29 +242,31 @@ def download_json(url, filename, force_download=False, verbose=True):
     json
         json data
     """
-    filename = slugify(filename)
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
     
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filename = slugify(filename)
+
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+
+    if (not filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
-        
+
         request = get_online_request(url)
         data = request.json()
-        mkdir(download_dir)
-        
-        with open(filepath, "w+") as outfile:
+
+        with filepath.open(mode="w+") as outfile:
             json.dump(data, outfile)
-            
+
         msg_end_download(filename, verbose)
-        
-    else:            
-        with open(filepath, "r") as read_file:
+
+    else:
+        with filepath.open() as read_file:
             data = json.load(read_file)
-            
+
     return data
 
 
-def download_pic(url, filename, force_download = False, verbose = False):
+def download_pic(url, filename, force_download=False, verbose=False):
     """Downloads a .gif or .png pic fom an url
     
     Parameters
@@ -265,35 +285,48 @@ def download_pic(url, filename, force_download = False, verbose = False):
     image
         img data stream
     """
-
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    
     filename = slugify(filename)
-    possible_filenames = {'gif': filename + '.gif', 
-                       'png': filename + '.png'}
+    #    possible_filenames = {'gif': filename + '.gif',
+    #                       'png': filename + '.png'}
+    possible_paths = {
+        "gif": DOWNLOAD_DIR.joinpath(filename + ".gif"),
+        "png": DOWNLOAD_DIR.joinpath(filename + ".png"),
+    }
 
-    if all(not file_exists(filenames) for filenames in possible_filenames.values()) or force_download:    
-        
+    if (
+        all(not filepath.exists() for filepath in possible_paths.values())
+        or force_download
+    ):
+
         msg_start_download(filename, url, verbose)
+
+        tmp_path = DOWNLOAD_DIR.joinpath("tmp_img")
         
-        tmp_path = get_fname_path("tmp_img")
-        
-        imgformat = request_image(url, tmp_path)
-        
+        request_image(url, tmp_path)
+
         img_format = imghdr.what(tmp_path)
-        
-        assert img_format in ["gif", "png"], "Image format is wrong, something funny is happening in decoding probably"
-        
-        path = get_fname_path(filename)+"."+img_format
-        os.rename(tmp_path, path)
-        
+
+        assert img_format in [
+            "gif",
+            "png",
+        ], "Image format is wrong, something funny is happening in decoding probably"
+
+        path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, img_format))
+        tmp_path.rename(path)
+
         img = mpimg.imread(path)
-        
+
     else:
         for imgformat in ["gif", "png"]:
             try:
-                img = mpimg.imread(get_fname_path(filename)+"."+imgformat)
-            except:
-                FileNotFoundError
+                path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, imgformat))
+                img = mpimg.imread(path)
+            except FileNotFoundError:
+                pass
     return img
+
 
 def download_xml(url, filename, force_download=False, verbose=True):
     """ Downloads a KGML xml file
@@ -314,35 +347,40 @@ def download_xml(url, filename, force_download=False, verbose=True):
     tree
         XML tree
     """
-    filename = slugify(filename)
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
     
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filename = slugify(filename)
+
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+
+    if (not filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
-        
+
         response = get_online_request(url)
-#        treebytes = response.content
+        #        treebytes = response.content
         treestr = response.text
-        tree =  et.ElementTree(et.fromstring(treestr))
-        
-        mkdir(download_dir)
-        
-        with open(filepath, "w+") as outfile:
+        tree = et.ElementTree(et.fromstring(treestr))
+
+        #        mkdir(download_dir)
+
+        with filepath.open(mode="w+") as outfile:
             outfile.write(treestr)
-            
+
         msg_end_download(filename, verbose)
-        
+
     else:
-        msg_file_already_exists(filename, download_dir, verbose)
+        msg_file_already_exists(filename, verbose)
         tree = et.parse(filepath)
-            
+
     return tree
+
+
 # =============================================================================
 # KEGG API COMMANDS
 # =============================================================================
-    
 
-def keggapi_list(database, option = None, want_descriptions = False, force_download = False):
+
+def keggapi_list(database, option=None, want_descriptions=False, force_download=False):
     """Interface for the KEGG API LIST command
 
     See https://www.kegg.jp/kegg/rest/keggapi.html for usage
@@ -363,36 +401,52 @@ def keggapi_list(database, option = None, want_descriptions = False, force_downl
     item, descritpions
         lists for items and their descriptions
     """
-    
+
     org_codes = get_organism_codes()
     if database not in db_categories:
         raise KEGGKeyError(database)
-        
-    if (option == "xl")&(database != "brite"):
-        raise KEGGKeyError(database, msg = "option xl can only be used with brite argument")
-        
+
+    if (option == "xl") & (database != "brite"):
+        raise KEGGKeyError(
+            database, msg="option xl can only be used with brite argument"
+        )
+
     if (option in org_codes) & (database != "pathway") & (database != "module"):
-        raise KEGGKeyError(database, msg = "only pathway and module list request are available for {}".format(option))
-            
+        raise KEGGKeyError(
+            database,
+            msg="only pathway and module list request are available for {}".format(
+                option
+            ),
+        )
+
     option, optionurl = push_backslash(option)
-    
+
     url = "http://rest.kegg.jp/list/{}{}".format(database, optionurl)
     filename = database + "_" + option + "_list"
-    
-    list_fulltext = download_textfile(url, filename,force_download = force_download)
-    
+
+    list_fulltext = download_textfile(url, filename, force_download=force_download)
+
     if want_descriptions == False:
         itemlist = process_request_text(list_fulltext, want_descr=want_descriptions)
         return itemlist
-    
+
     elif want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(list_fulltext, want_descr=want_descriptions)
+        itemlist, descriptionlist = process_request_text(
+            list_fulltext, want_descr=want_descriptions
+        )
         assert len(itemlist) == len(descriptionlist), "different length, funny innit"
-        
+
         return itemlist, descriptionlist
 
 
-def keggapi_find(database, query, option = None, want_descriptions = False, verbose = False, force_download = False):
+def keggapi_find(
+    database,
+    query,
+    option=None,
+    want_descriptions=False,
+    verbose=False,
+    force_download=False,
+):
     """Interface for the KEGG API FIND command
     
     See https://www.kegg.jp/kegg/rest/keggapi.html for further info
@@ -418,34 +472,52 @@ def keggapi_find(database, query, option = None, want_descriptions = False, verb
         list of items and descriptions
     """
 
-
-    
     options = ["formula", "exact_mass", "mol_weight"]
-    
+
     if database not in db_categories + ["genes"]:
         raise KEGGKeyError(database)
-        
-    if (database == "compound" or database == "drug") & (option is not None) & (option not in options):
-        raise KEGGKeyError(database, msg = "only {} opts are available for {} database".format(options, database))
-        
+
+    if (
+        (database in ("compound", "drug"))
+        & (option is not None)
+        & (option not in options)
+    ):
+        raise KEGGKeyError(
+            database,
+            msg="only {} opts are available for {} database".format(options, database),
+        )
+
     query, queryurl = push_backslash(query)
     option, optionurl = push_backslash(option)
-    
+
     url = "http://rest.kegg.jp/find/{}{}{}".format(database, queryurl, optionurl)
-    
+
     filename = database + "_" + query + "_" + option
-    fulltext = download_textfile(url, filename, verbose = verbose, force_download = force_download)
+    fulltext = download_textfile(
+        url, filename, verbose=verbose, force_download=force_download
+    )
     if want_descriptions == False:
         itemlist = process_request_text(fulltext, want_descr=want_descriptions)
         return itemlist
     elif want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(fulltext, want_descr=want_descriptions)
-        assert len(itemlist) == len(descriptionlist), "different item and description lengths, something's not working"
-        
+        itemlist, descriptionlist = process_request_text(
+            fulltext, want_descr=want_descriptions
+        )
+        assert len(itemlist) == len(
+            descriptionlist
+        ), "different item and description lengths, something's not working"
+
         return itemlist, descriptionlist
-    
-    
-def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = False, force_download = False, show_result_image = True):
+
+
+def keggapi_get(
+    dbentry,
+    option=None,
+    want_descriptions=False,
+    verbose=False,
+    force_download=False,
+    show_result_image=True,
+):
     """Interface for the KEGG API GET command
 
     for further info read https://www.kegg.jp/kegg/rest/keggapi.html
@@ -466,40 +538,46 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Fal
         if set to True shows the downloaded image (the default is True)
     """
 
-    
-    options = ["aaseq","ntseq", "mol", "kcf","image","conf", "kgml","json"]
-    
+    options = ["aaseq", "ntseq", "mol", "kcf", "image", "conf", "kgml", "json"]
+
     if (option is not None) & (option not in options):
-        raise KEGGKeyError(option, msg = "option {} invalid for GET".format(option))
+        raise KEGGKeyError(option, msg="option {} invalid for GET".format(option))
 
     option, optionurl = push_backslash(option)
-    
+
     url = "http://rest.kegg.jp/get/{}{}".format(dbentry, optionurl)
-    
+
     if option == "":
         option = "description"
 
     filename = dbentry + "_" + option
-    
+
     if option == "description":
-        infos = download_textfile(url, filename, verbose = False, force_download = force_download)
+        infos = download_textfile(
+            url, filename, verbose=False, force_download=force_download
+        )
         if verbose == False:
             infos = "\n".join(infos.splitlines()[1:4])
         print("Infos on {} from KEGG:\n".format(dbentry))
         print(infos)
-        return
     elif option == "kgml":
-        tree = download_xml(url, filename, force_download=force_download, verbose = verbose)
+        tree = download_xml(
+            url, filename, force_download=force_download, verbose=verbose
+        )
         return tree
     elif option == "json":
-        json_data = download_json(url, filename, verbose = verbose)
+        json_data = download_json(url, filename, verbose=verbose)
         return json_data
     elif option in ["mol", "kcf", "conf", "ntseq"]:
-        text = download_textfile(url, filename, verbose = verbose, force_download = force_download)
+        text = download_textfile(
+            url, filename, verbose=verbose, force_download=force_download
+        )
         print(text)
         return text
     elif option == "aaseq":
-        text = download_textfile(url, filename, verbose = True, force_download = force_download)
+        text = download_textfile(
+            url, filename, verbose=True, force_download=force_download
+        )
         description = text.splitlines()[0]
         sequence = "".join(text.splitlines()[1:])
         if want_descriptions == True:
@@ -507,17 +585,17 @@ def keggapi_get(dbentry, option = None, want_descriptions = False, verbose = Fal
         else:
             return sequence
     elif option == "image":
-        img = download_pic(url, filename, verbose = True)
+        img = download_pic(url, filename, verbose=True)
         if show_result_image:
             plt.imshow(img)
         return img
     elif option == "kgml":
         raise NotImplementedError
     else:
-        raise KEGGKeyError(key = dbentry, msg = "KEGG GET API request not recognized")
+        raise KEGGKeyError(key=dbentry, msg="KEGG GET API request not recognized")
 
-    
-def keggapi_link(source, target, verbose = True, force_download = False):
+
+def keggapi_link(source, target, verbose=True, force_download=False):
     """Interface for the KEGG REST API LINK command 
     Given two different database names returns the linked relations between them
     
@@ -547,22 +625,23 @@ def keggapi_link(source, target, verbose = True, force_download = False):
         list of target nodes
     """
 
-    
     if target not in db_categories:
-        raise KEGGKeyError(target, msg = "source database {} is not a valid database".format(target))
-    
+        raise KEGGKeyError(
+            target, msg="source database {} is not a valid database".format(target)
+        )
+
     url = "http://rest.kegg.jp/link/{}/{}".format(target, source)
-    
+
     filename = target + "_" + source + "_link"
-    
-    text = download_textfile(url, filename, force_download = force_download)
-    
-    link1, link2 = process_request_text(text, want_descr = True)
-    
-    
+
+    text = download_textfile(url, filename, force_download=force_download, verbose = verbose)
+
+    link1, link2 = process_request_text(text, want_descr=True)
+
     return link1, link2
 
-def keggapi_conv(source, target, verbose = True, force_download = False):
+
+def keggapi_conv(source, target, verbose=True, force_download=False):
     """ KEGG REST API interface to CONV command
     Converts KEGG codes to and from NCBI ProteinID, NCBI GeneID, Uniprot, CHEBI\
     and PubChem name standards
@@ -590,7 +669,7 @@ def keggapi_conv(source, target, verbose = True, force_download = False):
         list of codes in the target database format
     
     """
-    
+
     org = get_organism_codes() + ["genes"]
     kegg_db = None
     outside_db = None
@@ -598,44 +677,41 @@ def keggapi_conv(source, target, verbose = True, force_download = False):
     outsidedb1 = ["ncbi-geneid", "ncbi-proteinid", "uniprot"]
     outsidedb2 = ["pubchem", "chebi"]
     outsidedblist = outsidedb1 + outsidedb2
-    
-    
-    #CHECK IF ARGUMENTS ARE VALID
+
+    # CHECK IF ARGUMENTS ARE VALID
     for entry in [source, target]:
         if entry in org + keggdblist:
             kegg_db = entry
         elif entry in outsidedblist:
             outside_db = entry
-    
+
     if (kegg_db is None) ^ (outside_db is None):
-        #second mode, source is a dbentry
+        # second mode, source is a dbentry
         if target not in org + keggdblist + outsidedblist:
-            raise KEGGKeyError(key = target)
-        #further checks to implement
+            raise KEGGKeyError(key=target)
+        # further checks to implement
     else:
         if kegg_db in org:
             if outside_db not in outsidedb1:
-                raise KEGGKeyError(key = outside_db)
+                raise KEGGKeyError(key=outside_db)
         elif kegg_db in keggdblist:
             if outside_db not in outsidedb2:
-                raise KEGGKeyError(key = outside_db)
+                raise KEGGKeyError(key=outside_db)
         else:
-            raise KEGGKeyError(key = kegg_db)
-
+            raise KEGGKeyError(key=kegg_db)
 
     url = "http://rest.kegg.jp/conv/{}/{}".format(target, source)
-    
+
     filename = target + "_" + source + "_conv"
-    
-    text = download_textfile(url, filename, force_download = force_download)
-    
-    codes1, codes2 = process_request_text(text, want_descr = True)
-    
+
+    text = download_textfile(url, filename, force_download=force_download, verbose = verbose)
+
+    codes1, codes2 = process_request_text(text, want_descr=True)
+
     return codes1, codes2
-        
 
 
-def keggapi_info(database, verbose = True, force_download = False):
+def keggapi_info(database, verbose=True, force_download=False):
     """KEGG REST API interface for INFO command
     Displays information on a given database
     
@@ -651,23 +727,25 @@ def keggapi_info(database, verbose = True, force_download = False):
         forces overwriting on previous cached files (default is False)
     """
     org = get_organism_codes()
-    
+
     if database not in db_categories + org:
-        raise KEGGKeyError(database, msg = "source database {} is not a valid database".format(database))
-        
+        raise KEGGKeyError(
+            database, msg="source database {} is not a valid database".format(database)
+        )
+
     url = "http://rest.kegg.jp/info/{}".format(database)
-    
-    filename = database+"_info"
-    
-    infos = download_textfile(url, filename, verbose=False)
+
+    filename = database + "_info"
+
+    infos = download_textfile(url, filename, verbose=False, force_download = force_download)
     if verbose == False:
         infos = "\n".join(infos.splitlines()[1:4])
 
     print("Infos on {} from KEGG:\n".format(database))
     print(infos)
-    
-    
-def keggapi_ddi(dbentry, force_download = False):
+
+
+def keggapi_ddi(dbentry, force_download=False):
     """KEGG REST API interface for the DDI command
     lists drug-drug interactions for a given compound name
     
@@ -680,30 +758,26 @@ def keggapi_ddi(dbentry, force_download = False):
         forces overwriting over cached files (default is False)
         
     for further info read https://www.kegg.jp/kegg/rest/keggapi.html"""
-    
-    
-        
+
     url = "http://rest.kegg.jp/ddi/{}".format(dbentry)
-    
-    filename = dbentry+"_ddi"
-    
-    text = download_textfile(url, filename, verbose=False)
+
+    filename = dbentry + "_ddi"
+
+    text = download_textfile(url, filename, verbose=False, force_download = force_download)
 
     ddi_list = []
-    
+
     for line in text.splitlines():
         drug1, drug2, ddi_code, interaction = line.strip().split("\t")
         ddi_list.append((drug1, drug2, ddi_code, interaction))
-        
-    return ddi_list
-    
-    
 
-    
+    return ddi_list
+
+
 # =============================================================================
 # KEGGAPI DERIVATE FUNCTIONS
 # =============================================================================
-def get_organism_codes():
+def get_organism_codes(force_download=False):
     """Returns all KEGG Organism name codes """
 
     org_url = "http://rest.kegg.jp/list/organism"
@@ -711,16 +785,26 @@ def get_organism_codes():
 
     org_codes = []
 
-    organism_fulltext = download_textfile(org_url, org_filename, verbose=False)
+    if force_download:
+        organism_fulltext = download_textfile(
+            org_url, org_filename, verbose=False, force_download=force_download
+        )
 
-    for line in organism_fulltext.splitlines():
-        T_identifier, kegg_code, description, hier = line.strip().split("\t")
-        org_codes.append(kegg_code)
+        for line in organism_fulltext.splitlines():
+            _, kegg_code, _, _ = line.strip().split("\t")
+            org_codes.append(kegg_code)
+
+    else:
+        with open("./res/org_codes.txt", "r+") as org_file:
+            organism_fulltext = org_file.read()
+
+        for line in organism_fulltext.splitlines():
+            org_codes.append(line)
 
     return org_codes
 
 
-def kegg_url(target_db, source_db): #deprecated
+def kegg_url(target_db, source_db):  # deprecated
     """Returns a KEGG database URL given two categories
     
     Parameters:
@@ -777,4 +861,3 @@ def get_infos(item, verbose=False):
 
     print("Infos on {} from KEGG:\n".format(item))
     print(infos)
-

@@ -8,8 +8,9 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
 import KEGGutils.KEGGutils as kgu
+import KEGGutils.KEGGerrors as errors
 
-from KEGGutils.KEGGgraph import KEGGlinkgraph
+#from KEGGutils.KEGGgraph import KEGGlinkgraph
 
 hsa_nodes = ['hsa:9344', 'hsa:5894', 'hsa:673', 'hsa:5607']
 enzyme_nodes = ['ec:2.7.8.2', 'ec:3.4.23.3', 'ec:2.3.3.10', 'ec:6.4.1.2']
@@ -23,7 +24,7 @@ testgraph.add_edge(hsa_nodes[0], enzyme_nodes[0])
 class KEGGutilsTest(unittest.TestCase):
     
     @patch('KEGGutils.KEGGutils.keggapi_link')
-    def test_kegg_link_graph_returns_bipartite_graphs(self, mocker):
+    def test_kegg_link_graph_all_nodes_are_correctly_copied(self, mocker):
 
         mocker.return_value = [hsa_nodes, enzyme_nodes]
         
@@ -49,6 +50,50 @@ class KEGGutilsTest(unittest.TestCase):
         
         self.assertTrue(set(graph.nodes) == set(hsa_nodes + enzyme_nodes), "Different number of nodes")
     
+    @patch('KEGGutils.KEGGutils.keggapi_link')
+    def test_has_nodetypes_actuallyhas(self, mock_keggapi_link):
+        
+        mock_keggapi_link.return_value = [hsa_nodes, enzyme_nodes]
+        
+        graph = kgu.kegg_link_graph("hsa", "enzyme")
+        
+        self.assertTrue(kgu.has_nodetypes(graph))
+
+    def test_has_nodetype_doesnthave(self):
+        
+        graph = nx.Graph()
+        
+        self.assertFalse(kgu.has_nodetypes(graph))
+        
+    @patch('KEGGutils.KEGGutils.keggapi_link')
+    def test_get_nodes_by_nodetype(self, mock_keggapi_link):
+        
+        mock_keggapi_link.return_value = [hsa_nodes, enzyme_nodes]
+        
+        graph = kgu.kegg_link_graph("hsa", "enzyme")
+        
+        self.assertEqual(kgu.get_nodes_by_nodetype(graph, "hsa"), dict.fromkeys(hsa_nodes, "hsa"))
+        
+    @patch('KEGGutils.KEGGutils.keggapi_link')
+    def test_get_nodes_by_nodetype_invalidgraph(self, mock_keggapi_link):
+        
+        mock_keggapi_link.return_value = [hsa_nodes, enzyme_nodes]
+        
+        graph = nx.Graph()
+        
+        with self.assertRaises(errors.NotAKeggGraphError):
+            kgu.get_nodes_by_nodetype(graph, "hsa")
+            
+    @patch('KEGGutils.KEGGutils.keggapi_link')
+    def test_get_nodes_by_nodetype_missingnodetype(self, mock_keggapi_link):
+        
+        mock_keggapi_link.return_value = [hsa_nodes, enzyme_nodes]
+        
+        graph = kgu.kegg_link_graph("hsa", "enzyme")
+        
+        with self.assertRaises(errors.MissingNodetypeError):
+            kgu.get_nodes_by_nodetype(graph, "map")
+            
     def test_get_nodes_by_nodetype_correct_nodetype_dict(self):
         hsa_nodetypes = dict.fromkeys(hsa_nodes, "hsa")
         self.assertEqual(kgu.get_nodes_by_nodetype(testgraph, "hsa"), hsa_nodetypes)
@@ -64,3 +109,5 @@ class KEGGutilsTest(unittest.TestCase):
     
     def test_neighbor_graph_edges(self):
         self.assertEqual(set(list(kgu.neighbor_graph(testgraph, {hsa_nodes[0]: 'hsa'}).edges)[0]), set([hsa_nodes[0], enzyme_nodes[0]]))
+        
+    
