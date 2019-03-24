@@ -198,7 +198,8 @@ def download_textfile(url, filename, force_download=False, verbose=True):
     Returns:
         text [str] -- downloaded text
     """
-
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    
     filename = slugify(filename)
     filepath = DOWNLOAD_DIR.joinpath(filename)
 
@@ -241,11 +242,13 @@ def download_json(url, filename, force_download=False, verbose=True):
     json
         json data
     """
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    
     filename = slugify(filename)
 
     filepath = DOWNLOAD_DIR.joinpath(filename)
 
-    if (filepath.exists()) or force_download:
+    if (not filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
 
         request = get_online_request(url)
@@ -282,7 +285,8 @@ def download_pic(url, filename, force_download=False, verbose=False):
     image
         img data stream
     """
-
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    
     filename = slugify(filename)
     #    possible_filenames = {'gif': filename + '.gif',
     #                       'png': filename + '.png'}
@@ -343,6 +347,8 @@ def download_xml(url, filename, force_download=False, verbose=True):
     tree
         XML tree
     """
+    DOWNLOAD_DIR.mkdir(exist_ok=True)
+    
     filename = slugify(filename)
 
     filepath = DOWNLOAD_DIR.joinpath(filename)
