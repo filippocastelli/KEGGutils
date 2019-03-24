@@ -91,20 +91,6 @@ def msg_file_already_exists(filename, download_dir, verbose= True):
 # =============================================================================
 # FILE MANAGEMENT
 # =============================================================================
-def file_exists(filename):
-    """Checks if file exists, accepts only filename"""
-    return os.path.isfile(get_fname_path(filename))
-
-def get_fname_path(filename):
-    """ Returns the complete path for a filename using download_dir"""
-    return download_dir+ filename
-
-#def mkdir(directory):
-#    """ Creates a directory if it doesn't already exsist"""
-#    try:
-#        os.mkdir(directory)
-#    except FileExistsError:
-#        pass
 
 def delete_cached_files():
     """Deletes all files in download_dir"""
@@ -117,14 +103,15 @@ def delete_cached_files():
         os.remove(file)
 
 def change_download_dir(newpath):
+    """ Changes download directory to the one specified in newpath"""
     global DOWNLOAD_DIR
     DOWNLOAD_DIR = pathlib.Path(newpath).absolute()
     DOWNLOAD_DIR.mkdir(exist_ok = True)
     
 def get_download_dir():
+    """ Returns download directory path"""
     global DOWNLOAD_DIR
     return DOWNLOAD_DIR    
-
 
 # =============================================================================
 # DOWNLOADS
@@ -143,7 +130,8 @@ def request_image(url, fpath):
     response = requests.get(url, stream = True)
     
     if response.status_code == 200:
-        with open(fpath, 'wb') as out_file:
+#        with open(fpath, 'wb') as out_file:
+        with fpath.open(mode = "wb") as out_file:
             shutil.copyfileobj(response.raw, out_file)
     else:
         raise KEGGOnlineError
@@ -201,24 +189,22 @@ def download_textfile(url, filename, force_download=False, verbose=True):
     """
 
     filename = slugify(filename)
-    
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+
+
+    if (not filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
         
         request = get_online_request(url)
         text = request.text
-#        mkdir(download_dir)
-        
-        with open(filepath, "w+") as text_file:
-            text_file.write(text)
+        filepath.write_text(text)
             
         msg_end_download(filename, verbose)
         
     else:
         msg_file_already_exists(filename, download_dir, verbose)
-        with open(filepath, "r") as read_file:
-            text = read_file.read()
+        
+        text = filepath.read_text()
     
     if text == '\n':
         raise KEGGInvalidFileContent(filename, text)
@@ -246,21 +232,21 @@ def download_json(url, filename, force_download=False, verbose=True):
     """
     filename = slugify(filename)
     
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+    
+    if (filepath.exists()) or force_download:
         msg_start_download(filename, url, verbose)
         
         request = get_online_request(url)
         data = request.json()
-#        mkdir(download_dir)
-        
-        with open(filepath, "w+") as outfile:
+
+        with filepath.open(mode = "w+") as outfile:
             json.dump(data, outfile)
             
         msg_end_download(filename, verbose)
         
-    else:            
-        with open(filepath, "r") as read_file:
+    else:
+        with filepath.open() as read_file:
             data = json.load(read_file)
             
     return data
@@ -287,14 +273,16 @@ def download_pic(url, filename, force_download = False, verbose = False):
     """
 
     filename = slugify(filename)
-    possible_filenames = {'gif': filename + '.gif', 
-                       'png': filename + '.png'}
-
-    if all(not file_exists(filenames) for filenames in possible_filenames.values()) or force_download:    
+#    possible_filenames = {'gif': filename + '.gif', 
+#                       'png': filename + '.png'}
+    possible_paths = {'gif': DOWNLOAD_DIR.joinpath(filename+".gif"),
+                      'png': DOWNLOAD_DIR.joinpath(filename+".png")}
+    
+    if all(not filepath.exists() for filepath in possible_paths.values()) or force_download:    
         
         msg_start_download(filename, url, verbose)
         
-        tmp_path = get_fname_path("tmp_img")
+        tmp_path = DOWNLOAD_DIR.joinpath("tmp_img")
         
         imgformat = request_image(url, tmp_path)
         
@@ -302,15 +290,16 @@ def download_pic(url, filename, force_download = False, verbose = False):
         
         assert img_format in ["gif", "png"], "Image format is wrong, something funny is happening in decoding probably"
         
-        path = get_fname_path(filename)+"."+img_format
-        os.rename(tmp_path, path)
+        path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, img_format))
+        tmp_path.rename(path)
         
         img = mpimg.imread(path)
         
     else:
         for imgformat in ["gif", "png"]:
             try:
-                img = mpimg.imread(get_fname_path(filename)+"."+imgformat)
+                path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, img_format))
+                img = mpimg.imread(path)
             except:
                 FileNotFoundError
     return img
@@ -336,8 +325,9 @@ def download_xml(url, filename, force_download=False, verbose=True):
     """
     filename = slugify(filename)
     
-    filepath = download_dir + filename
-    if (not file_exists(filename)) or force_download:
+    filepath = DOWNLOAD_DIR.joinpath(filename)
+    
+    if (not filepath.exists() ) or force_download:
         msg_start_download(filename, url, verbose)
         
         response = get_online_request(url)
@@ -347,7 +337,7 @@ def download_xml(url, filename, force_download=False, verbose=True):
         
 #        mkdir(download_dir)
         
-        with open(filepath, "w+") as outfile:
+        with filepath.open(mode = "w+") as outfile:
             outfile.write(treestr)
             
         msg_end_download(filename, verbose)
