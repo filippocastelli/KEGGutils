@@ -11,7 +11,9 @@ from .KEGGapi import (
         get_organism_codes,
         get_infos,
         db_categories,
-        download_dir)
+        download_dir,
+        get_download_dir,
+        change_download_dir)
 
 from .KEGGutils import (
         kegg_link_graph,

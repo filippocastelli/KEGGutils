@@ -4,16 +4,27 @@ import matplotlib.image as mpimg
 import matplotlib.pylab as plt
 import logging
 import xml.etree.ElementTree as et
+import pkg_resources
+import pathlib
+
 
 from slugify import slugify
 
+RES_PATH = pkg_resources.resource_filename('KEGGutils', 'res/')
+ORG_CODES = pkg_resources.resource_filename('KEGGutils', 'res/org_codes.txt')
+
+CURRENT_DIR = pathlib.Path.cwd()
+DOWNLOAD_DIR = CURRENT_DIR.joinpath("kegg_downloads")
+DOWNLOAD_DIR.mkdir(exist_ok = True)
 
 from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
 from KEGGutils.KEGGhelpers import push_backslash
 
+#from KEGGutils.KEGGenums import KEGGoutside, KEGGorganisms, KEGGdatabases, KEGGmedicus
+
 
 download_dir = "./kegg_downloads/"
-
+    
 db_categories = [
     "pathway",
     "brite",
@@ -88,12 +99,12 @@ def get_fname_path(filename):
     """ Returns the complete path for a filename using download_dir"""
     return download_dir+ filename
 
-def mkdir(directory):
-    """ Creates a directory if it doesn't already exsist"""
-    try:
-        os.mkdir(directory)
-    except FileExistsError:
-        pass
+#def mkdir(directory):
+#    """ Creates a directory if it doesn't already exsist"""
+#    try:
+#        os.mkdir(directory)
+#    except FileExistsError:
+#        pass
 
 def delete_cached_files():
     """Deletes all files in download_dir"""
@@ -104,6 +115,15 @@ def delete_cached_files():
 
     for file in files_to_remove:
         os.remove(file)
+
+def change_download_dir(newpath):
+    global DOWNLOAD_DIR
+    DOWNLOAD_DIR = pathlib.Path(newpath).absolute()
+    DOWNLOAD_DIR.mkdir(exist_ok = True)
+    
+def get_download_dir():
+    global DOWNLOAD_DIR
+    return DOWNLOAD_DIR    
 
 
 # =============================================================================
@@ -188,7 +208,7 @@ def download_textfile(url, filename, force_download=False, verbose=True):
         
         request = get_online_request(url)
         text = request.text
-        mkdir(download_dir)
+#        mkdir(download_dir)
         
         with open(filepath, "w+") as text_file:
             text_file.write(text)
@@ -232,7 +252,7 @@ def download_json(url, filename, force_download=False, verbose=True):
         
         request = get_online_request(url)
         data = request.json()
-        mkdir(download_dir)
+#        mkdir(download_dir)
         
         with open(filepath, "w+") as outfile:
             json.dump(data, outfile)
@@ -325,7 +345,7 @@ def download_xml(url, filename, force_download=False, verbose=True):
         treestr = response.text
         tree =  et.ElementTree(et.fromstring(treestr))
         
-        mkdir(download_dir)
+#        mkdir(download_dir)
         
         with open(filepath, "w+") as outfile:
             outfile.write(treestr)
@@ -703,19 +723,30 @@ def keggapi_ddi(dbentry, force_download = False):
 # =============================================================================
 # KEGGAPI DERIVATE FUNCTIONS
 # =============================================================================
-def get_organism_codes():
+def get_organism_codes(force_download = False):
     """Returns all KEGG Organism name codes """
 
     org_url = "http://rest.kegg.jp/list/organism"
     org_filename = "organism_code_list"
 
     org_codes = []
+    
+    
+    if force_download:
+        organism_fulltext = download_textfile(org_url, org_filename, verbose=False, force_download = force_download)
+        
+        for line in organism_fulltext.splitlines():
+            T_identifier, kegg_code, description, hier = line.strip().split("\t")
+            org_codes.append(kegg_code)
+            
+    else:
+        with open("./res/org_codes.txt", "r+") as org_file:
+            organism_fulltext = org_file.read()
+            
+        for line in organism_fulltext.splitlines():
+            org_codes.append(line)
+        
 
-    organism_fulltext = download_textfile(org_url, org_filename, verbose=False)
-
-    for line in organism_fulltext.splitlines():
-        T_identifier, kegg_code, description, hier = line.strip().split("\t")
-        org_codes.append(kegg_code)
 
     return org_codes
 
