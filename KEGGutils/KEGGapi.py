@@ -74,17 +74,15 @@ outside = ["pubmed", "ncbi-geneid", "ncbi-proteinid", "uniprot", "pubchem", "che
 
 def msg_start_download(filename, url, verbose = True):
     if verbose == True:
-        print("> Downloading {} from KEGG at {}".format(filename, url))
+        logging.info("> Downloading {} from KEGG at {}".format(filename, url))
         
 def msg_end_download(filename, verbose = True):
     if verbose == True:
-        print("succesfully downloaded {}".format(filename))
+        logging.info("succesfully downloaded {}".format(filename))
         
-def msg_file_already_exists(filename, download_dir, verbose= True):
+def msg_file_already_exists(filename, verbose= True):
     if verbose == True:
-        logging.warning("> File {} already present in {}\nreading from chached file...".format(filename, download_dir))
-#        print("> File {} already present in {}".format(filename, download_dir))
-#        print("reading from cached file...")
+        logging.warning("> File {} already present in {}\nreading from chached file...".format(filename, DOWNLOAD_DIR))
 
 
 
@@ -202,7 +200,7 @@ def download_textfile(url, filename, force_download=False, verbose=True):
         msg_end_download(filename, verbose)
         
     else:
-        msg_file_already_exists(filename, download_dir, verbose)
+        msg_file_already_exists(filename, verbose)
         
         text = filepath.read_text()
     
@@ -343,7 +341,7 @@ def download_xml(url, filename, force_download=False, verbose=True):
         msg_end_download(filename, verbose)
         
     else:
-        msg_file_already_exists(filename, download_dir, verbose)
+        msg_file_already_exists(filename, verbose)
         tree = et.parse(filepath)
             
     return tree
