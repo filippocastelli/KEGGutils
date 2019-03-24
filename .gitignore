@@ -2,6 +2,7 @@
 *.pyc
 *.egg
 *.egg-info
+*.coverage
 
 
 
@@ -13,3 +14,4 @@ source
 kegg_downloads
 
 tests/test_files_dir/*
+tests/htmlcov/*
