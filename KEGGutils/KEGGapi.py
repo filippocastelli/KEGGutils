@@ -768,7 +768,7 @@ def keggapi_ddi(dbentry, force_download=False):
     ddi_list = []
 
     for line in text.splitlines():
-        drug1, drug2, ddi_code, interaction = line.strip().split("\t")
+        drug1, drug2, ddi_code, interaction = line.split("\t")
         ddi_list.append((drug1, drug2, ddi_code, interaction))
 
     return ddi_list
