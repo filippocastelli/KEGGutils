@@ -4,8 +4,7 @@
 *.egg-info
 *.coverage
 
-
-
+debugscript.py
 
 dist
 build
