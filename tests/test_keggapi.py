@@ -84,7 +84,7 @@ class KEGGapiTest(unittest.TestCase):
         self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing", force_download = True), text)
         
     def test_download_textfile_file_exists(self):
-        filepath = os.path.join(kgapi.download_dir, "textfile_testing")
+        filepath = os.path.join(kgapi.DOWNLOAD_DIR, "textfile_testing")
         text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
         try:
             os.remove(filepath)

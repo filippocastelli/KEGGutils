@@ -24,7 +24,7 @@ from KEGGutils.KEGGhelpers import push_backslash
 # from KEGGutils.KEGGenums import KEGGoutside, KEGGorganisms, KEGGdatabases, KEGGmedicus
 
 
-download_dir = "./kegg_downloads/"
+#download_dir = "./kegg_downloads/"
 
 db_categories = [
     "pathway",
@@ -99,9 +99,11 @@ def msg_file_already_exists(filename, verbose=True):
 
 def delete_cached_files():
     """Deletes all files in download_dir"""
-    files_to_remove = glob.glob(download_dir + "*")
+    
+    files_to_remove = list(DOWNLOAD_DIR.glob("*"))
+    files_to_remove = [file for file in files_to_remove if file.is_file()]
 
-    print("> deleting the following files from {}".format(download_dir))
+    print("> deleting the following files from {}".format(str(DOWNLOAD_DIR)))
     print(*files_to_remove, sep="\n")
 
     for file in files_to_remove:
@@ -361,7 +363,6 @@ def download_xml(url, filename, force_download=False, verbose=True):
         treestr = response.text
         tree = et.ElementTree(et.fromstring(treestr))
 
-        #        mkdir(download_dir)
 
         with filepath.open(mode="w+") as outfile:
             outfile.write(treestr)

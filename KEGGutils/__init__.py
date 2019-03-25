@@ -11,7 +11,8 @@ from .KEGGapi import (
         get_organism_codes,
         get_infos,
         db_categories,
-        download_dir,
+        DOWNLOAD_DIR,
+        CURRENT_DIR,
         get_download_dir,
         change_download_dir)
 
