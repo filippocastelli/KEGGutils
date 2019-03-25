@@ -23,10 +23,10 @@ jobs:
           command: |
             . venv/bin/activate
             pytest -v --cov
-      # Step 4: test if notebook work
+      # Step 4: test if notebooks work
       - run:
           name: run notebooks
           command: |
             . venv/bin/activate
-            cd examples
+            cd tutorials
             for f in *.ipynb; do jupyter-nbconvert --to notebook --execute "$f"; done
