@@ -30,4 +30,3 @@ jobs:
             . venv/bin/activate
             cd examples
             for f in *.ipynb; do jupyter-nbconvert --to notebook --execute "$f"; done
-            pytest -v --cov
