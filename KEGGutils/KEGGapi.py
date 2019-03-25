@@ -10,8 +10,8 @@ import pathlib
 
 from slugify import slugify
 
-RES_PATH = pkg_resources.resource_filename("KEGGutils", "res/")
-ORG_CODES = pkg_resources.resource_filename("KEGGutils", "res/org_codes.txt")
+RES_PATH = pathlib.Path(pkg_resources.resource_filename("KEGGutils", "res/"))
+ORG_CODES = pathlib.Path(pkg_resources.resource_filename("KEGGutils", "res/org_codes.txt"))
 
 CURRENT_DIR = pathlib.Path.cwd()
 DOWNLOAD_DIR = CURRENT_DIR.joinpath("kegg_downloads")
@@ -316,13 +316,13 @@ def download_pic(url, filename, force_download=False, verbose=False):
         path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, img_format))
         tmp_path.rename(path)
 
-        img = mpimg.imread(path)
+        img = mpimg.imread(str(path))
 
     else:
         for imgformat in ["gif", "png"]:
             try:
                 path = DOWNLOAD_DIR.joinpath("{}.{}".format(filename, imgformat))
-                img = mpimg.imread(path)
+                img = mpimg.imread(str(path))
             except FileNotFoundError:
                 pass
     return img
@@ -795,8 +795,10 @@ def get_organism_codes(force_download=False):
             org_codes.append(kegg_code)
 
     else:
-        with open("./res/org_codes.txt", "r+") as org_file:
-            organism_fulltext = org_file.read()
+        org_codespath = RES_PATH.joinpath("org_codes.txt")
+#        with open("./res/org_codes.txt", "r+") as org_file:
+#            organism_fulltext = org_file.read()
+        organism_fulltext = org_codespath.read_text()
 
         for line in organism_fulltext.splitlines():
             org_codes.append(line)
