@@ -62,7 +62,17 @@ class KEGGInvalidFileContent(Exception):
             
         super(KEGGInvalidFileContent, self).__init__(msg)
 
+class KEGGDataBaseError(Exception):
+    def __init__(self, db, msg=None):
+        
+        self.db = db
 
+
+        if msg is None:
+            msg = "Invalid KEGG database {}".format(self.db)
+            
+        super(KEGGDataBaseError, self).__init__(msg)
+        
 class KEGGInvalidContent(Exception):
     def __init__(self, content, msg=None):
         

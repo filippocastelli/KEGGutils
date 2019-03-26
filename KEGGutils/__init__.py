@@ -31,5 +31,6 @@ from .KEGGutils import (
 from .KEGGpathway import KEGGpathway
 
 from .KEGGgraph import (KEGGgraph,
-                        KEGGlinkgraph)
+                        KEGGlinkgraph,
+                        KEGGchain)
 __version__ = "0.2.0"

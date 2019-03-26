@@ -3,7 +3,8 @@ import logging
 import matplotlib.pylab as plt
 
 from KEGGutils.KEGGutils import get_nodes_by_nodetype, populate_graph, connected_components, linked_nodes, graph_measures
-from KEGGutils.KEGGapi import keggapi_link
+from KEGGutils.KEGGapi import keggapi_link, keggapi_info
+from KEGGutils.KEGGerrors import KEGGDataBaseError
 
 
 
@@ -59,6 +60,8 @@ class KEGGgraph(nx.DiGraph):
     def graph_measures(self):
         return graph_measures(self)
         
+    
+
 class KEGGlinkgraph(KEGGgraph):
     
     source_db = None
@@ -67,7 +70,11 @@ class KEGGlinkgraph(KEGGgraph):
     source_nodes = {}
     target_nodes = {}
     
-
+    source_linked_db = []
+    target_linked_db = []
+    
+    
+    
     def __init__(self, *args, **kwargs):
         
         if "source_db" in kwargs:
@@ -91,11 +98,59 @@ class KEGGlinkgraph(KEGGgraph):
         
         populate_graph(self, nodes1, nodes2, self.source_db, self.target_db)
         
+        self.source_linked_db = self.source_infos(return_format = "dict")['linked db']
+        self.target_linked_db = self.target_infos(return_format = "dict")['linked db']
+        
+        
+    def source_infos(self,return_format = None):
+        return keggapi_info(self.source_db, return_format = return_format)
+    def target_infos(self,return_format = None):
+        return keggapi_info(self.target_db, return_format = return_format)
+        
     def _get_nodes_from_api(self, source, target):
         
         nodes1, nodes2 = keggapi_link(source, target, verbose = True)
         
         return nodes1, nodes2
+    
+    
+
+class KEGGchain(KEGGgraph):
+    chain_dbs = []
+    chain = []
+
+    def __init__(self, *args, **kwargs):
+        if "chain" in kwargs:
+            self.chain_dbs = kwargs.pop("chain")
+            
+        super().__init__(*args, **kwargs)
+        
+        if self.chain_dbs != []:    
+            self.initchain()
+            
+            composed_graph = nx.compose_all(self.chain)
+            self.add_nodes_from(composed_graph.nodes(data = True)) 
+            self.add_edges_from(composed_graph.edges(data = True))
+            
+            self.name = ">".join(self.chain_dbs)+" chain"
+        
+    def initchain(self):
+        self.chain = []
+        for i, db in enumerate(self.chain_dbs):
+            if i == len(self.chain_dbs) -1 :
+                pass
+            else:
+                link = [self.chain_dbs[i], self.chain_dbs[i+1]]
+                source_linkeddb = keggapi_info(link[0], return_format = "dict")['linked db']
+                if link[1] not in source_linkeddb:
+                    raise KEGGDataBaseError(db = link[1], msg = "KEGG database {} doesn't have a direct link to {}:\nplease compose your chain only using sequentially linkable databases".format(link[0], link[1]))
+                self.chain.append(KEGGlinkgraph(source_db = link[0], target_db = link[1]))                
+                
+        
+
+                
+            
+
     
     
             
