@@ -7,6 +7,8 @@ from KEGGutils.KEGGapi import keggapi_link, keggapi_info
 from KEGGutils.KEGGerrors import KEGGDataBaseError
 
 
+#keggapi_info_ = keggapi_info
+
 
 class KEGGgraph(nx.DiGraph):
     

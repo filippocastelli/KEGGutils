@@ -30,7 +30,7 @@ from .KEGGutils import (
 
 from .KEGGpathway import KEGGpathway
 
-from .KEGGgraph import (KEGGgraph,
+from .KEGGgraphs import (KEGGgraph,
                         KEGGlinkgraph,
                         KEGGchain)
 __version__ = "0.2.0"

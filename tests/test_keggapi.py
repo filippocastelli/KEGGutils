@@ -72,8 +72,7 @@ class KEGGapiTest(unittest.TestCase):
             pass
         
         filepath.write_text(text)
-            
-        print(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", filename = "textfile-testing"))
+        
         self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile-testing"),text)
         
     @patch('requests.get', side_effect = mocked_requests_get)

@@ -6,7 +6,7 @@ import matplotlib.pylab as plt
 from KEGGutils import draw
 from KEGGutils.KEGGapi import keggapi_get
 from KEGGutils.KEGGerrors import KGMLerror
-from KEGGutils.KEGGgraph import KEGGgraph
+from KEGGutils.KEGGgraphs import KEGGgraph
  
 
 class KEGGpathway(KEGGgraph):
