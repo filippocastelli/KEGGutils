@@ -18,7 +18,7 @@ DOWNLOAD_DIR = CURRENT_DIR.joinpath("kegg_downloads")
 
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
-from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent
+from KEGGutils.KEGGerrors import KEGGOnlineError, KEGGKeyError, KEGGInvalidFileContent, KEGGInvalidContent
 from KEGGutils.KEGGhelpers import push_backslash
 
 # from KEGGutils.KEGGenums import KEGGoutside, KEGGorganisms, KEGGdatabases, KEGGmedicus
@@ -92,6 +92,7 @@ def msg_file_already_exists(filename, verbose=True):
         )
 
 
+
 # =============================================================================
 # FILE MANAGEMENT
 # =============================================================================
@@ -159,32 +160,75 @@ def get_online_request(url):
     return request
 
 
-def process_request_text(fulltext, want_descr=False):
+def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
     """Preprocessing of item-description type text
     
     Separates couple of words in item \t description format
     
-    Parameters:
-        :fulltext (str): raw text
-        :wannt_descr (bool): if False ignores descriptions and returns items only
+    Parameters
+    ----------
+    fulltext : str
+        raw text
+    mode : str
+        parsing mode, valid ones are bipartite_list ! columns
+    want_desc : bool
+        valid only for "bipartite" mode, if False returns only first of the two lists
+
+    Returns
+    -------
+    itemlist, descriptionlist : list
+        list of items and their descriptions, only for bipartite_list mode
+    parsed_dict : dict
+        dictionary from parsed text, only for columns mode
+        """
         
+    validmodes = ["bipartite_list", "columns"]
     
-    Returns:
-        itemlist, *descriptionlist (list): list of items and descriptions (optional)"""
-
-    itemlist = []
-    descriptionlist = []
-
-    for line in fulltext.splitlines():
-        entry, description = line.strip().split("\t")
-        itemlist.append(entry)
-        descriptionlist.append(description)
-    if want_descr == True:
-        return itemlist, descriptionlist
-    else:
-        return itemlist
-
-
+    if mode not in validmodes:
+        raise ValueError
+        
+    if mode == "bipartite_list":
+        itemlist = []
+        descriptionlist = []
+    
+        for line in fulltext.splitlines():
+            entry, description = line.strip().split("\t")
+            itemlist.append(entry)
+            descriptionlist.append(description)
+        if want_descr == True:
+            return itemlist, descriptionlist
+        else:
+            return itemlist
+    if mode == "columns":
+        parsed_dict = {}
+        for line in fulltext.splitlines():
+            split_line = line.split("  ")
+            
+            split_line = [entry.lstrip() for entry in split_line if entry != ""]
+            
+            if len(split_line) == 0:
+                pass
+            elif len(split_line) == 2:
+                current_key, item = split_line
+                
+                parsed_dict[current_key] = []
+                parsed_dict[current_key].append(item)
+                #remove all empty entries
+            elif len(split_line) == 1:
+                
+                try:
+                    parsed_dict[current_key]
+                except KeyError:
+                    #shouldn't happen tho
+                    raise KEGGInvalidContent(fulltext, msg = "text response cannot be parsed")
+                    
+                item = split_line[0]
+                parsed_dict[current_key].append(item)
+            else:
+                raise NotImplementedError
+        
+        return parsed_dict
+                
 def download_textfile(url, filename, force_download=False, verbose=True):
     """downloads a text file given an url and a filename
     
@@ -712,7 +756,7 @@ def keggapi_conv(source, target, verbose=True, force_download=False):
     return codes1, codes2
 
 
-def keggapi_info(database, verbose=True, force_download=False):
+def keggapi_info(database, verbose=True, force_download=False, return_format = None):
     """KEGG REST API interface for INFO command
     Displays information on a given database
     
@@ -726,7 +770,22 @@ def keggapi_info(database, verbose=True, force_download=False):
         if set to False displays only the first 4 lines of text (default is True)
     force_download :  bool
         forces overwriting on previous cached files (default is False)
+    retutn_format : str
+        optional, specify a return format to return, str | dict (default is None)
+        
+    Returns
+    -------
+    info_str : str
+        optional, plain text response of API INFO command
+    info_dict : dict
+        optional, parsed response of API INFO as a dictionary
     """
+    
+    valid_return_formats = (None, "str", "dict")
+    
+    if return_format not in valid_return_formats:
+        raise ValueError("invalid {} format for keggapi_info return".format(return_format))
+        
     org = get_organism_codes()
 
     if database not in db_categories + org:
@@ -739,11 +798,19 @@ def keggapi_info(database, verbose=True, force_download=False):
     filename = database + "_info"
 
     infos = download_textfile(url, filename, verbose=False, force_download = force_download)
-    if verbose == False:
-        infos = "\n".join(infos.splitlines()[1:4])
-
-    print("Infos on {} from KEGG:\n".format(database))
-    print(infos)
+    
+    logging.info("Infos on %s from KEGG:\n",database)
+    if return_format == None:
+        if verbose == False:
+             print("\n".join(infos.splitlines()[1:4]))
+        else:
+            print(infos)
+    elif return_format == "str":
+        return infos
+    elif return_format == "dict":
+        processed_dict = process_request_text(infos, mode = "columns")
+        return processed_dict
+        
 
 
 def keggapi_ddi(dbentry, force_download=False):

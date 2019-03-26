@@ -61,6 +61,17 @@ class KEGGInvalidFileContent(Exception):
             msg = "Invalid content {} in file {}".format(self.content, self.file)
             
         super(KEGGInvalidFileContent, self).__init__(msg)
+
+
+class KEGGInvalidContent(Exception):
+    def __init__(self, content, msg=None):
+        
+        self.content = content
+
+        if msg is None:
+            msg = "Invalid content in {}".format(self.content)
+            
+        super(KEGGInvalidFileContent, self).__init__(msg)
         
 class KGMLerror(Exception):
     def __init__(self, xml_file = None, tree = None, msg=None):

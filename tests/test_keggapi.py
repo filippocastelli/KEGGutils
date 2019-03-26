@@ -48,11 +48,30 @@ def mocked_requests_get(*args, **kwargs):
         return MockResponse(url = args[0],
                             text = '\n',
                             status_code = 200)
-
+    elif args[0] ==  "http://rest.kegg.jp/info/hsa":
+        return MockResponse(url = args[0],
+                            text = "hsa             descr_hsa",
+                            status_code = 200)
     return MockResponse()
 
 
 class KEGGapiTest(unittest.TestCase):
+    
+    
+    @patch('requests.get', side_effect = mocked_requests_get)
+    def test_keggapi_info_returns_str(self, mockrequest):
+        
+        response_str = kgapi.keggapi_info("hsa", return_format = "str")
+        
+        self.assertEqual(response_str,  "hsa             descr_hsa")
+        
+    @patch('requests.get', side_effect = mocked_requests_get)
+    def test_keggapi_info_returns_dict(self, mockrequest):
+        
+        response_dict = kgapi.keggapi_info("hsa", return_format = "dict")
+        
+        expected_dict = {"hsa": ["descr_hsa"]}
+        self.assertEqual(response_dict, expected_dict)
     
     @patch('requests.get', side_effect = mocked_requests_get)
     def test_download_json_file_doesnt_exist(self, mockrequestsget):
@@ -62,7 +81,7 @@ class KEGGapiTest(unittest.TestCase):
         
     @patch('KEGGutils.KEGGapi.get_organism_codes', return_value = ['hsa'])
     @patch('requests.get', side_effect = mocked_requests_get,)
-    def test_process_request_text_wantdescrFalse(self, mocked_orgcodes, mockrequestget):
+    def test_keggapi_list_wantdescrFalse(self, mocked_orgcodes, mockrequestget):
         itemlist = kgapi.keggapi_list("hsa", want_descriptions = False)
         test_genes = set(["testgene1", "testgene2"])
         self.assertEqual(set(itemlist), set(test_genes))
@@ -70,7 +89,7 @@ class KEGGapiTest(unittest.TestCase):
         
     @patch('KEGGutils.KEGGapi.get_organism_codes', return_value = ['hsa'])
     @patch('requests.get', side_effect = mocked_requests_get,)
-    def test_process_request_text_wantdescrTrue(self, mocked_orgcodes, mockrequestget):
+    def test_keggapi_list_wantdescrTrue(self, mocked_orgcodes, mockrequestget):
         itemlist, descriptionlist = kgapi.keggapi_list("hsa", want_descriptions = True)
         test_genes = set(["testgene1", "testgene2"])
         test_descriptions = set(["testdescription1", "testdescription2"])
@@ -102,8 +121,10 @@ class KEGGapiTest(unittest.TestCase):
         
         with self.assertRaises(kgerrors.KEGGInvalidFileContent):
             kgapi.download_textfile(url =  "http://rest.kegg.jp/returninvalidtext", filename = "textfile_testing", force_download = True)
-    
-    
+            
+
+            
+        
         
         
         
