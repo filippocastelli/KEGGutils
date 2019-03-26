@@ -98,14 +98,15 @@ def msg_file_already_exists(filename, verbose=True):
 # =============================================================================
 
 
-def delete_cached_files():
+def delete_cached_files(verbose = True):
     """Deletes all files in download_dir"""
     
     files_to_remove = list(DOWNLOAD_DIR.glob("*"))
     files_to_remove = [file for file in files_to_remove if file.is_file()]
-
-    print("> deleting the following files from {}".format(str(DOWNLOAD_DIR)))
-    print(*files_to_remove, sep="\n")
+    
+    if verbose == True:
+        print("> deleting the following files from {}".format(str(DOWNLOAD_DIR)))
+        print(*files_to_remove, sep="\n")
 
     for file in files_to_remove:
         os.remove(file)

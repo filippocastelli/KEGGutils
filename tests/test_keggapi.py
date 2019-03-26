@@ -9,60 +9,20 @@ sys.path.insert(0,parentdir)
 import KEGGutils.KEGGapi as kgapi
 import KEGGutils.KEGGerrors as kgerrors
 
-from tests.download_fresh_test_responses import unpickle_resp, test_files_path
 
-
-# This method will be used by the mock to replace requests.get
-def mocked_requests_get(*args, **kwargs):
-    class MockResponse:
-        def __init__(self, url = None, json_data = None, text = None, status_code = 404, reason = 'Not Found'):
-            self.url = url
-            self.json_data = json_data
-            self.status_code = status_code
-            self.text = text
-            self.reason = reason
-            
-            self.ok = status_code == 200
-            
-            
-            if (self.ok):
-                self.reason = 'OK'
-            
-        def json(self):
-            return self.json_data
-        
-    
-    if args[0] == "http://rest.kegg.jp/get/br:br08301/json":
-        return MockResponse(url = args[0],
-                            json_data = {"key1": "value1"},
-                            status_code = 200)
-    elif args[0] == 'http://rest.kegg.jp/get/hsa05130/image':
-        return unpickle_resp("testpng")
-    elif args[0] == "http://rest.kegg.jp/get/C00002/image":
-        return unpickle_resp("testgif")
-    elif args[0] ==  "http://rest.kegg.jp/list/hsa":
-        return MockResponse(url = args[0],
-                            text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2",
-                            status_code = 200)
-    elif args[0] == "http://rest.kegg.jp/returninvalidtext":
-        return MockResponse(url = args[0],
-                            text = '\n',
-                            status_code = 200)
-    elif args[0] ==  "http://rest.kegg.jp/info/hsa":
-        return MockResponse(url = args[0],
-                            text = "hsa             descr_hsa",
-                            status_code = 200)
-    return MockResponse()
-
+from tests.http_mocker import mocked_requests_get
 
 class KEGGapiTest(unittest.TestCase):
+    
+    def setUp(self):
+        kgapi.delete_cached_files(verbose = False)
     
     
     @patch('requests.get', side_effect = mocked_requests_get)
     def test_keggapi_info_returns_str(self, mockrequest):
         
         response_str = kgapi.keggapi_info("hsa", return_format = "str")
-        
+
         self.assertEqual(response_str,  "hsa             descr_hsa")
         
     @patch('requests.get', side_effect = mocked_requests_get)
@@ -102,19 +62,19 @@ class KEGGapiTest(unittest.TestCase):
         text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
         self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing", force_download = True), text)
         
-    def test_download_textfile_file_exists(self):
-        filepath = os.path.join(kgapi.DOWNLOAD_DIR, "textfile_testing")
-        text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
+    @patch('requests.get', side_effect = mocked_requests_get)
+    def test_download_textfile_file_exists(self, mocker):
+        filepath = kgapi.DOWNLOAD_DIR.joinpath("textfile-testing")
+        text = "surprise_mofo"
         try:
             os.remove(filepath)
-        except OSError:
-            #file already exists
+        except FileNotFoundError:
             pass
         
-        with open(filepath, "w+") as textfile:
-            textfile.write(text)
-        
-        self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing"),text)
+        filepath.write_text(text)
+            
+        print(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", filename = "textfile-testing"))
+        self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile-testing"),text)
         
     @patch('requests.get', side_effect = mocked_requests_get)
     def test_download_textfile_raise_error_if_newline(self, mockrequest):

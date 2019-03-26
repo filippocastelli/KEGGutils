@@ -10,7 +10,6 @@ sys.path.insert(0,parentdir)
 import KEGGutils.KEGGutils as kgu
 import KEGGutils.KEGGerrors as errors
 
-#from KEGGutils.KEGGgraph import KEGGlinkgraph
 
 hsa_nodes = ['hsa:9344', 'hsa:5894', 'hsa:673', 'hsa:5607']
 enzyme_nodes = ['ec:2.7.8.2', 'ec:3.4.23.3', 'ec:2.3.3.10', 'ec:6.4.1.2']
