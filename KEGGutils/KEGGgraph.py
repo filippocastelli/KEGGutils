@@ -134,6 +134,7 @@ class KEGGchain(KEGGgraph):
             
             self.name = ">".join(self.chain_dbs)+" chain"
         
+        
     def initchain(self):
         self.chain = []
         for i, db in enumerate(self.chain_dbs):
