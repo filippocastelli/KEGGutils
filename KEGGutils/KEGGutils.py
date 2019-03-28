@@ -182,7 +182,7 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
         :name (str): optional, name of the graph
         
     Returns:
-        :neighbor_graph (Graph): graph of nodelist, first neighbors of those nodes\
+        :neighbor_graph (Graph): graph of node_dict, first neighbors of those nodes\
         and edges between them
     .. seealso:: kegg_link_graph()
     """
@@ -222,21 +222,20 @@ def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
     return neighbor_graph
 
 
-def projected_graph(graph, nodelist, multigraph=False, name=None):
+def projected_graph(graph, nodedict, multigraph=False, name=None):
     """Calculates the projected graph respect to a node list     
     Parameters:
         :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
-        :nodelist (list): list of nodes
+        :nodedict (dict): dict of nodes and nodetypes
         :multigraph (bool): if True 
         :name (str): optional name of the graph
         
     Returns:
-        :descendant_graph (Graph): graph of descendant nodes
+        :projected_graph (Graph): projected graph
     .. seealso:: kegg_link_graph()
     """
-
     graphnodes_set = set(graph.nodes)
-    nodelist_set = set(nodelist.keys())
+    nodelist_set = set(nodedict.keys())
 
     common_nodes = graphnodes_set & nodelist_set
 
