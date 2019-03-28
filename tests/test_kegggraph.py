@@ -33,8 +33,8 @@ class KEGGLinkGraphTests(unittest.TestCase):
         
         linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
         projected_graph = linkgraph.projected_graph()
-        
-        self.assertEqual(list(projected_graph.edges), [("s1", "s2")])
+
+        self.assertEqual(set(list(projected_graph.edges)[0]), set(["s1", "s2"]))
         
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGutils.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
@@ -46,7 +46,7 @@ class KEGGLinkGraphTests(unittest.TestCase):
         
         print(linkgraph.nodes())
         print(graph.nodes())
-        self.assertCountEqual(list(linkgraph.nodes()), list(graph.nodes()), "KEGGlinkgraph produces different nodes than kegg_link_graph method alone")
+        self.assertEqual(set(linkgraph.nodes()), set(graph.nodes()), "KEGGlinkgraph produces different nodes than kegg_link_graph method alone")
         
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
