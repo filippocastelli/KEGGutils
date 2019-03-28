@@ -105,9 +105,7 @@ def get_nodes_by_nodetype(kegg_graph, nodetype):
         """
 
     if nodetype not in get_unique_nodetypes(kegg_graph):
-        raise MissingNodetypeError(
-            kegg_graph, "Requested nodetype is missing in graph nodes"
-        )
+        raise MissingNodetypeError(nodetype, kegg_graph)
 
     node_list = [n for n in kegg_graph if kegg_graph.node[n]["nodetype"] == nodetype]
 

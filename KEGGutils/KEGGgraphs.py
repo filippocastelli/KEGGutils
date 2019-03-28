@@ -1,41 +1,57 @@
 import networkx as nx
 import logging
-import matplotlib.pylab as plt
 
 from KEGGutils.KEGGutils import get_nodes_by_nodetype, populate_graph, connected_components,\
-linked_nodes, graph_measures, projected_graph
+linked_nodes, graph_measures, projected_graph, get_unique_nodetypes, draw, neighbor_graph
 from KEGGutils.KEGGapi import keggapi_link, keggapi_info
-from KEGGutils.KEGGerrors import KEGGDataBaseError, KEGGKeyError
+from KEGGutils.KEGGerrors import KEGGDataBaseError, KEGGKeyError, KEGGgraphError
 
 
 #keggapi_info_ = keggapi_info
 
 
 class KEGGgraph(nx.Graph):
+    """Base class from KEGGutils NetworkX compatible Graphs:
+    Directly inherits from networkx.Graph()
+
+    Methods
+    -------
+    list_by_nodetype(nodetype)
+        returns a dict of nodes for the given nodetype in the form {key: nodetype}
     
-    elements = {}
-    pos = {}
+    connected_components()
+        returns a list of connected components
     
+    linked_nodes(node)
+        returns a dict of nodes in the graph connected to a givne node in the form {key: nodetype}
+
+     graph_measures()
+        returns a list of graph characteristics
+    
+    shortest_path(source_node, target_node):
+        computes the shortest path between two nodes
+    
+    compose(othergraph, inplace = False)
+        returns graph composition between self and one or more other graphs
+    
+    neighbor_graph(nodedict, keep_isolated_nodes, inplace = False)
+        returns graph of internal neighbors to a given dict of nodes
+
+    get_unique_nodetypes()
+        returns unique nodetypes in graph
+
+    draw(layout = None)
+        plots the graph
+    
+    prune_isolated_nodes(inplace = False)
+        removes isolated nodes
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
     def _find_arg_and_kick(self, args, to_find):
-        """finds an arg in args using to_find as a substring
-        
-        Parameters
-        ----------
-        args : list
-            list of args
-        to_find : str
-            substring to identify the argument
-        
-        Returns
-        -------
-        arg: str
-            found argument
-        newargs: list
-            list of arguments without arg
-        """
+        """finds an arg in args using to_find as a substring"""
 
         for arg in args:
             if type(arg) == str:
@@ -48,6 +64,8 @@ class KEGGgraph(nx.Graph):
                     return arg, newargs
         
     def list_by_nodetype(self, nodetype):
+        """Returns a list of nodes given a nodetype"""
+
         
         nodes_dict = get_nodes_by_nodetype(self, nodetype)
         
@@ -55,24 +73,137 @@ class KEGGgraph(nx.Graph):
         return list(dict.fromkeys(list(nodes_dict.keys())))
     
     def connected_components(self):
+        """ returns a list of connected components"""
         return connected_components(self)
     
     def linked_nodes(self,node):
+        """ returns a list of linked nodes to node"""
         return linked_nodes(self, node)
     
     def graph_measures(self):
+        """ see KEGGutils.graph_measures()"""
         return graph_measures(self)
     
     def shortest_path(self, source_node, target_node):
+        """ Returns the shortest path between two nodes"""
         return nx.shortest_path(self, source_node, target_node)
     
+    def compose(self, othergraph, inplace = False):
+        """Comppose
+        Calculates composition between two or mre graphs
+        
+        Parameters
+        ----------
+        othergraph : KEGGgraph
+            Can be a single KEGGgraph, a list of graphs or a tuple of graphs, contains the other graphs you want to calculate composition respect to
+        inplace : bool, optional
+            If True the original graph calling the method is substituted by the composition (the default is False)
+        
+        Returns
+        -------
+        KEGGgraph
+            composed graph
+        """
+
+        if type(othergraph) == self.__class__:
+            composed_graph = nx.compose(self, othergraph)
+        elif type(othergraph) is list or type(othergraph) is tuple :
+            if not all((type(x) == self.__class__) for x in othergraph):
+                raise KEGGgraphError([graph for graph in othergraph if not (type(graph) == self.__class__)][0])
+            composed_graph = nx.compose_all(othergraph)
+        
+        if inplace ==True: 
+            self.add_nodes_from(composed_graph.nodes(data = True)) 
+            self.add_edges_from(composed_graph.edges(data = True))
+        return composed_graph
     
+    def neighbor_graph(self, nodelist, keep_isolated_nodes = True, inplace = False):
+        """Neighbor Graph
+        
+        Parameters
+        ----------
+        nodelist : list
+            contains the nodes we wish to calculate the neighbor graph respect to
+        keep_isolated_nodes : bool, optional
+            Isolated nodes can be automatically removed selecting False (the default is True)
+        inplace : bool, optional
+            Substitutes the original graph with the neighbor graph (the default is False, which [default_description])
+        
+        Returns
+        -------
+        graph
+            neighbor graph
+        """
+
+        if set(nodelist) - set(self.nodes) == set():
+            raise ValueError
+            
+        #i'll take the first intersection nodetype for all
+        nodetype = [x for x in nodelist if x in self.nodes][0]['nodetype']
+        nodedict = dict.fromkeys(nodelist, nodetype)
+        
+        ngraph = neighbor_graph(self, nodedict)
+        
+        if inplace == True:
+            name = self.name
+            self.clear() #removes nodes, edge, name
+            self.add_nodes_from(ngraph.nodes(data = True))
+            self.add_edges_from(ngraph.edges(data = True))
+            self.name = name
+            
+            return self
+        else:
+            return ngraph
+        
+        
+    def get_unique_nodetypes(self):
+        """returns a list of  graph's unique nodetypes"""
+        return get_unique_nodetypes(self)
+        
+    def draw(self, layout = None):
+        """ plots the graph"""
+        draw(self, title = self.name, layout = layout)
+
+    def prune_isolated_nodes(self, inplace = False):
+        """ removes isolated nodes"""
+        isolates = nx.isolates(self)
+        
+        if inplace == True:
+            self.remove_nodes_from(isolates)
+            return self
+        
+        else:
+            gcopy = self.copy()
+            gcopy.remove_nodes_from(isolates)
+            
+            return gcopy
         
         
         
-    
 
 class KEGGlinkgraph(KEGGgraph):
+    """KEGGlinkgraph class inherits from KEGGgraph
+    Can be used to build bipartite graphs from KEGG API LINK functionality 
+    
+    Parameters
+    ----------
+
+    source_db : str
+        Source Database
+    target_db : str
+        Target Database
+
+    source_nodes : dict
+        dict of source nodes {node: nodetype}
+    target_nodes : dict
+        dict of target nodes {node: nodetype}
+    
+    source_liked_db : list
+        list of databases connected to source in KEGG
+    target_linked_db : list
+        list of databases connected to target in KEGG
+    """
+
     
     source_db = None
     target_db = None
@@ -113,11 +244,30 @@ class KEGGlinkgraph(KEGGgraph):
         
         
     def source_infos(self,return_format = None):
+        """ retrieves infos on the source database"""
         return keggapi_info(self.source_db, return_format = return_format)
     def target_infos(self,return_format = None):
+        """ retrieves info on the target database"""
         return keggapi_info(self.target_db, return_format = return_format)
         
-    def projected_graph(self, nodelist = None, multigraph = False, name = None):
+    def projected_graph(self, nodelist = None, name = None):
+        """Projects the link graph on a subset of nodes
+        
+        Parameters
+        ----------
+        nodelist : list, optional
+            list of nodes you wish to project onto, if None automatically selects source nodes
+        name : str, optional
+            name of the graph
+        
+        
+        Returns
+        -------
+        graph
+            projection graph
+        """
+
+        
         
         assert nx.is_bipartite(self), "Graph is not bipartite, something's wrong with graph construction"
         if nodelist == None:
@@ -126,12 +276,15 @@ class KEGGlinkgraph(KEGGgraph):
             if set(nodelist) & set(self.source_nodes.keys()) is set():
                 raise KEGGKeyError(key = self.source_db,
                                    msg = "nodelist and target_nodes intersection ( {} nodetype) must not be null".format(self.source_db)) 
-            nodedict = dict.fromkeys(nodelist, self.source_db)
+                
+            intersection_nodes = [x for x in nodelist if x in nodedict]
+            nodetype = intersection_nodes[0]['nodetype']
+            nodedict = dict.fromkeys(nodelist, nodetype)
         
 
             
         proj_graph = projected_graph(self, nodedict = nodedict,
-                                     multigraph = multigraph,
+                                     multigraph = False,
                                      name = "projection of {} onto {}")
         if name == None:
             name = "projection of {} onto {} nodes".format(self.name, self.source_db)
@@ -155,8 +308,25 @@ class KEGGlinkgraph(KEGGgraph):
     
 
 class KEGGchain(KEGGgraph):
+    """ KEGGchain
+    Can be used to build chains of KEGGlinkgraphs, builds a composed graph of sequentially linked databases
+
+    Init Arguments
+    --------------
+    chain : list
+        list of databases, they have to be sequentially linked in KEGG
+
+    Properties
+    ----------
+
+    chain_dbs : list
+        list of databases
+    chain : list
+        list of chained KEGGlinkgraphs
+    """
     chain_dbs = []
     chain = []
+
 
     def __init__(self, *args, **kwargs):
         if "chain" in kwargs:

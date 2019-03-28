@@ -15,8 +15,16 @@ class NotAKeggGraphError(KeggUtilsGraphException):
     pass
 
 
-class MissingNodetypeError(KeggUtilsGraphException):
-    pass
+class MissingNodetypeError(Exception):
+    def __init__(self, nodetype, graph, msg=None):
+        self.graph = graph
+        self.nodetype = nodetype
+        
+        if msg is None:
+            msg = "Nodetype {} is missing in graph {}".format(self.nodetype, self.graph.name)
+            
+        super().__init__(graph, msg)
+
 
 
 class NoProjectedError(KeggUtilsGraphException):
@@ -93,3 +101,13 @@ class KGMLerror(Exception):
             msg = "Invalid tree {} in xml file {}".format(self.tree, self.xml_file)
             
         super(KGMLerror, self).__init__(msg)
+        
+class KEGGgraphError(Exception):
+    def __init__(self, graph = None, msg = None):
+        self.graph = graph
+        
+        if msg is None:
+            msg = "Invalid KEGGgraph {}".format(self.graph)
+            
+        super(KEGGgraphError, self).__init__(msg)
+        
