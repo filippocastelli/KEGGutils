@@ -2,15 +2,16 @@ import networkx as nx
 import logging
 import matplotlib.pylab as plt
 
-from KEGGutils.KEGGutils import get_nodes_by_nodetype, populate_graph, connected_components, linked_nodes, graph_measures
+from KEGGutils.KEGGutils import get_nodes_by_nodetype, populate_graph, connected_components,\
+linked_nodes, graph_measures, projected_graph
 from KEGGutils.KEGGapi import keggapi_link, keggapi_info
-from KEGGutils.KEGGerrors import KEGGDataBaseError
+from KEGGutils.KEGGerrors import KEGGDataBaseError, KEGGKeyError
 
 
 #keggapi_info_ = keggapi_info
 
 
-class KEGGgraph(nx.DiGraph):
+class KEGGgraph(nx.Graph):
     
     elements = {}
     pos = {}
@@ -61,6 +62,13 @@ class KEGGgraph(nx.DiGraph):
     
     def graph_measures(self):
         return graph_measures(self)
+    
+    def shortest_path(self, source_node, target_node):
+        return nx.shortest_path(self, source_node, target_node)
+    
+    
+        
+        
         
     
 
@@ -109,11 +117,40 @@ class KEGGlinkgraph(KEGGgraph):
     def target_infos(self,return_format = None):
         return keggapi_info(self.target_db, return_format = return_format)
         
+    def projected_graph(self, nodelist = None, multigraph = False, name = None):
+        
+        assert nx.is_bipartite(self), "Graph is not bipartite, something's wrong with graph construction"
+        if nodelist == None:
+            nodedict = self.source_nodes
+        else:
+            if set(nodelist) & set(self.source_nodes.keys()) is set():
+                raise KEGGKeyError(key = self.source_db,
+                                   msg = "nodelist and target_nodes intersection ( {} nodetype) must not be null".format(self.source_db)) 
+            nodedict = dict.fromkeys(nodelist, self.source_db)
+        
+
+            
+        proj_graph = projected_graph(self, nodedict = nodedict,
+                                     multigraph = multigraph,
+                                     name = "projection of {} onto {}")
+        if name == None:
+            name = "projection of {} onto {} nodes".format(self.name, self.source_db)
+            
+        
+        projected_kegggraph = KEGGgraph()
+
+        projected_kegggraph.add_nodes_from(proj_graph.nodes(data = True)) 
+        projected_kegggraph.add_edges_from(proj_graph.edges(data = True))
+        projected_kegggraph.name = name
+        
+        return projected_kegggraph
+        
     def _get_nodes_from_api(self, source, target):
         
         nodes1, nodes2 = keggapi_link(source, target, verbose = True)
         
         return nodes1, nodes2
+    
     
     
 

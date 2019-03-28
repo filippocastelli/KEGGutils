@@ -26,12 +26,20 @@ class KEGGLinkGraphTests(unittest.TestCase):
     
     def setUp(self):
         kg.delete_cached_files(verbose = False)
-
-    @patch('requests.get', side_effect = mocked_requests_get)
+        
+    @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [["s1", "s2", "s3"],["t1","t1","t2"] ])
+    @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
+    def test_kegglinkgraph_projection_has_edges(self, link_mocker, info_mocker):
+        
+        linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
+        projected_graph = linkgraph.projected_graph()
+        
+        self.assertEqual(list(projected_graph.edges), [("s1", "s2")])
+        
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGutils.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
-    def test_kegglinkgraph_same_nodes_as_original_function(self, http_mocker, link_mocker,linkmocker2, info_mocker):
+    def test_kegglinkgraph_same_nodes_as_original_function(self, link_mocker,linkmocker2, info_mocker):
         
         linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
         graph = kg.kegg_link_graph("hsa", "enzyme")
@@ -40,29 +48,26 @@ class KEGGLinkGraphTests(unittest.TestCase):
         print(graph.nodes())
         self.assertCountEqual(list(linkgraph.nodes()), list(graph.nodes()), "KEGGlinkgraph produces different nodes than kegg_link_graph method alone")
         
-    @patch('requests.get', side_effect = mocked_requests_get)
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
-    def test_kegglinkgraph_correct_nodetypes(self, http_mocker, link_mocker, info_mocker):
+    def test_kegglinkgraph_correct_nodetypes(self, link_mocker, info_mocker):
 
         linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
 
         self.assertEqual(linkgraph.source_nodes[hsa_nodes[0]], "hsa", "Source node dict contains wrong nodetype")
         self.assertEqual(linkgraph.target_nodes[enzyme_nodes[0]], "enzyme", "Target node dict contains wrong nodetype")
         
-    @patch('requests.get', side_effect = mocked_requests_get)
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
-    def test_kegglinkgraph_number_of_nodes(self, http_mocker, link_mocker, info_mocker):
+    def test_kegglinkgraph_number_of_nodes(self, link_mocker, info_mocker):
         
         linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
         
         self.assertEqual((len(linkgraph.nodes)),(len(hsa_nodes) + len(enzyme_nodes)))
     
-    @patch('requests.get', side_effect = mocked_requests_get)
     @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
     @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
-    def test_1(self, http_mocker, linkmocker, infomocker):
+    def test_1(self, linkmocker, infomocker):
 
         linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
         
