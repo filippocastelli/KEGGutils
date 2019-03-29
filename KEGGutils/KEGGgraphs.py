@@ -63,22 +63,29 @@ class KEGGgraph(nx.Graph):
 
                     return arg, newargs
         
-    def list_by_nodetype(self, nodetype):
+    def list_by_nodetype(self, nodetype, return_dict = False):
         """Returns a list of nodes given a nodetype"""
 
         
-        nodes_dict = get_nodes_by_nodetype(self, nodetype)
-        
-        #it's ugly af but removes duplicates in a line
-        return list(dict.fromkeys(list(nodes_dict.keys())))
+        if return_dict != True:
+            nodelist = get_nodes_by_nodetype(self, nodetype)
+            
+            #it's ugly af but removes duplicates in a line
+            return list(dict.fromkeys(nodelist))
+        else:
+            return get_nodes_by_nodetype(self, nodetype, return_dict = True)
     
     def connected_components(self):
         """ returns a list of connected components"""
         return connected_components(self)
     
-    def linked_nodes(self,node):
+    def linked_nodes(self,node, return_dict = False):
         """ returns a list of linked nodes to node"""
-        return linked_nodes(self, node)
+        
+        if return_dict == True:
+            return linked_nodes(self, node, return_dict = True)
+        else:
+            return linked_nodes(self, node)
     
     def graph_measures(self):
         """ see KEGGutils.graph_measures()"""
@@ -89,7 +96,7 @@ class KEGGgraph(nx.Graph):
         return nx.shortest_path(self, source_node, target_node)
     
     def compose(self, othergraph, inplace = False):
-        """Comppose
+        """Compose
         Calculates composition between two or mre graphs
         
         Parameters
@@ -115,7 +122,9 @@ class KEGGgraph(nx.Graph):
         if inplace ==True: 
             self.add_nodes_from(composed_graph.nodes(data = True)) 
             self.add_edges_from(composed_graph.edges(data = True))
-        return composed_graph
+            return self
+        else:
+            return composed_graph
     
     def neighbor_graph(self, nodelist, keep_isolated_nodes = True, inplace = False):
         """Neighbor Graph
@@ -135,14 +144,15 @@ class KEGGgraph(nx.Graph):
             neighbor graph
         """
 
-        if set(nodelist) - set(self.nodes) == set():
+        if set(nodelist) & set(self.nodes) == set():
             raise ValueError
             
         #i'll take the first intersection nodetype for all
-        nodetype = [x for x in nodelist if x in self.nodes][0]['nodetype']
+        intersection_list = [x for x in nodelist if x in self.nodes] 
+        nodetype = self.nodes[intersection_list[0]]['nodetype']
         nodedict = dict.fromkeys(nodelist, nodetype)
         
-        ngraph = neighbor_graph(self, nodedict)
+        ngraph = neighbor_graph(self, nodedict, keep_isolated_nodes = keep_isolated_nodes)
         
         if inplace == True:
             name = self.name
@@ -178,8 +188,6 @@ class KEGGgraph(nx.Graph):
             
             return gcopy
         
-        
-        
 
 class KEGGlinkgraph(KEGGgraph):
     """KEGGlinkgraph class inherits from KEGGgraph
@@ -187,17 +195,17 @@ class KEGGlinkgraph(KEGGgraph):
     
     Parameters
     ----------
-
     source_db : str
         Source Database
     target_db : str
         Target Database
 
+    Properties
+    ----------
     source_nodes : dict
         dict of source nodes {node: nodetype}
     target_nodes : dict
         dict of target nodes {node: nodetype}
-    
     source_liked_db : list
         list of databases connected to source in KEGG
     target_linked_db : list
@@ -239,16 +247,37 @@ class KEGGlinkgraph(KEGGgraph):
         
         populate_graph(self, nodes1, nodes2, self.source_db, self.target_db)
         
-        self.source_linked_db = self.source_infos(return_format = "dict")['linked db']
-        self.target_linked_db = self.target_infos(return_format = "dict")['linked db']
+        self.source_linked_db = self.source_infos(return_format = "dict", verbose = False)['linked db']
+        self.target_linked_db = self.target_infos(return_format = "dict", verbose = False)['linked db']
         
         
-    def source_infos(self,return_format = None):
+    def source_infos(self,return_format = None, verbose = True):
         """ retrieves infos on the source database"""
-        return keggapi_info(self.source_db, return_format = return_format)
-    def target_infos(self,return_format = None):
+        return keggapi_info(self.source_db, return_format = return_format, verbose = verbose)
+    def target_infos(self,return_format = None, verbose = True):
         """ retrieves info on the target database"""
-        return keggapi_info(self.target_db, return_format = return_format)
+        return keggapi_info(self.target_db, return_format = return_format, verbose = verbose)
+    
+    def neighbor_graph(self, nodelist, keep_isolated_nodes = True, inplace = False):
+        
+        ngraph =  super(type(self) ,self).neighbor_graph(nodelist, keep_isolated_nodes = keep_isolated_nodes, inplace = False)
+        
+        ngraph.source_db = self.source_db
+        ngraph.target_db = self.target_db
+        
+        ngraph.source_nodes = dict.fromkeys(ngraph.list_by_nodetype(self.source_db), self.source_db)
+        ngraph.target_nodes = dict.fromkeys(ngraph.list_by_nodetype(self.target_db), self.target_db)
+        
+        if inplace == True:
+            name = self.name
+            self.clear() #removes nodes, edge, name, shouldnt touch other properties
+            self.add_nodes_from(ngraph.nodes(data = True))
+            self.add_edges_from(ngraph.edges(data = True))
+            self.name = name
+            return self
+        else:
+            return ngraph
+        
         
     def projected_graph(self, nodelist = None, name = None):
         """Projects the link graph on a subset of nodes
@@ -266,9 +295,7 @@ class KEGGlinkgraph(KEGGgraph):
         graph
             projection graph
         """
-
-        
-        
+ 
         assert nx.is_bipartite(self), "Graph is not bipartite, something's wrong with graph construction"
         if nodelist == None:
             nodedict = self.source_nodes
@@ -277,8 +304,8 @@ class KEGGlinkgraph(KEGGgraph):
                 raise KEGGKeyError(key = self.source_db,
                                    msg = "nodelist and target_nodes intersection ( {} nodetype) must not be null".format(self.source_db)) 
                 
-            intersection_nodes = [x for x in nodelist if x in nodedict]
-            nodetype = intersection_nodes[0]['nodetype']
+            intersection_nodes = [x for x in nodelist if x in self.nodes]
+            nodetype = self.nodes[intersection_nodes[0]]['nodetype']
             nodedict = dict.fromkeys(nodelist, nodetype)
         
 

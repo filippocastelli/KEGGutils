@@ -73,4 +73,22 @@ class KEGGLinkGraphTests(unittest.TestCase):
         
         self.assertEqual(True, True, "ciao")
         
+    @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
+    @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
+    def test_kegglinkgraph_get_nodes_by_nodetype_islist(self, link_mocker, info_mocker):
+        
+        linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
+        list_nodes = linkgraph.list_by_nodetype("hsa")
+        
+        self.assertIsInstance(list_nodes, list)
+        
+    @patch('KEGGutils.KEGGgraphs.keggapi_link', return_value = [hsa_nodes, enzyme_nodes])
+    @patch('KEGGutils.KEGGgraphs.keggapi_info', return_value = {'linked db': ["enzyme"]})
+    def test_kegglinkgraph_get_linked_nodes_islist(self, link_mocker, info_mocker):
+        
+        linkgraph = KEGGlinkgraph(source_db = "hsa", target_db = "enzyme")
+        list_nodes = linkgraph.linked_nodes('hsa:9344')
+        
+        self.assertIsInstance(list_nodes, list)
+      
     

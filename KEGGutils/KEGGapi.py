@@ -800,7 +800,8 @@ def keggapi_info(database, verbose=True, force_download=False, return_format = N
 
     infos = download_textfile(url, filename, verbose=False, force_download = force_download)
     
-    logging.info("Infos on %s from KEGG:\n",database)
+    if verbose == True:
+        logging.info("Infos on %s from KEGG:\n",database)
     if return_format == None:
         if verbose == False:
              print("\n".join(infos.splitlines()[1:4]))

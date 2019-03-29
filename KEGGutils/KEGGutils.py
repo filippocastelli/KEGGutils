@@ -2,7 +2,7 @@ import networkx as nx
 import matplotlib.pylab as plt
 from matplotlib import colors as mplcolors
 import logging 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 from KEGGutils.KEGGerrors import MissingNodetypeError,NotAKeggGraphError, NoProjectedError
 from KEGGutils.KEGGhelpers import replace_dict_value, shift_pos, shorten_labels
@@ -82,26 +82,39 @@ def has_nodetypes(graph):
         return True
 
 
-def get_nodes_by_nodetype(kegg_graph, nodetype):
+def get_nodes_by_nodetype(kegg_graph, nodetype, return_dict = False):
     """Given a KEGG graph returns all the nodes for a given nodetype
     
-    Parameters:
-        :kegg_graph (Graph): input graph, has to be generated via kegg_link_graph()
-        :nodetype (str): nodetype, is generally a <database> KEGG name
+    Parameters
+    ----------
+    graph : Graph
+        input graph, has to be generated via kegg_link_graph()
+    nodetype : str
+        nodetype, is generally a <database> KEGG name
+    return_dict : bool
+        if True returns a {node : nodetype dict}
         
-    Returns:
-        :nodedict (dict): dict of nodes and corresponding nodetype
-    Example:
-        >>> KEGG_graph = kegg_link_graph("hsa", "disease")
-        >>> nodedict = get_nodes_by_nodetype(KEGG_graph, "hsa")
-        >>> list(nodedict.items())[:5]
-        [('hsa:7428', 'hsa'),
-         ('hsa:4233', 'hsa'),
-         ('hsa:2271', 'hsa'),
-         ('hsa:201163', 'hsa'),
-         ('hsa:7030', 'hsa')]
+    Returns
+    -------
+    nodes : list
+        nodes corresponding to nodetype
+    nodedict : dict
+        {nodes: nodetypes}
 
-    .. seealso:: kegg_link_graph()
+    Example
+    .......
+    >>> KEGG_graph = kegg_link_graph("hsa", "disease")
+    >>> nodedict = get_nodes_by_nodetype(KEGG_graph, "hsa")
+    >>> list(nodedict.items())[:5]
+    [('hsa:7428', 'hsa'),
+     ('hsa:4233', 'hsa'),
+     ('hsa:2271', 'hsa'),
+     ('hsa:201163', 'hsa'),
+     ('hsa:7030', 'hsa')]
+
+    Seealso
+    -------
+    kegg_link_graph()
         """
 
     if nodetype not in get_unique_nodetypes(kegg_graph):
@@ -109,7 +122,10 @@ def get_nodes_by_nodetype(kegg_graph, nodetype):
 
     node_list = [n for n in kegg_graph if kegg_graph.node[n]["nodetype"] == nodetype]
 
-    return dict.fromkeys(node_list, nodetype)
+    if return_dict == True:
+        return dict.fromkeys(node_list, nodetype)
+    else:
+        return node_list
 
 
 def connected_components(graph):
@@ -144,16 +160,26 @@ def get_unique_nodetypes(graph):
     return unique_nodetypes
 
 
-def linked_nodes(graph, node):
+def linked_nodes(graph, node, return_dict = False):
     """Linked Nodes:
         Returns all nodes in graph linked to node
-    
-    Parameters:
-        :graph (Graph): input graph, has to be generated via kegg_link_graph()
-        :node (str): name of a node in graph
         
-    Returns:
-        :linked_nodes (dict): dict of linked nodes { node: nodetype}
+    
+    Parameters
+    ----------
+    graph : Graph
+        input graph, has to be generated via kegg_link_graph()
+    node : str
+        name of a node in graph
+    return_dict : bool
+        if True returns a dict {nodes: nodetypes}
+        
+    Returns
+    -------
+    linked_nodes (dict)
+         dict of linked nodes { node: nodetype}
+    linked_nodes (list)
+        list of linked nodes
 
     .. seealso:: kegg_link_graph()
         """
@@ -162,8 +188,11 @@ def linked_nodes(graph, node):
     attributes = nx.get_node_attributes(graph, "nodetype")
 
     linked_nodes_dict = dict(((k, attributes[k]) for k in linked_nodes))
-
-    return linked_nodes_dict
+    
+    if return_dict == True:
+        return linked_nodes_dict
+    else:
+        return linked_nodes
 
 
 def neighbor_graph(graph, node_dict, name=None, keep_isolated_nodes=False):
@@ -304,7 +333,7 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = N
     base_colors = list(mplcolors.BASE_COLORS.keys())
     
     for i, nodetype in enumerate(graph_nodetypes):
-        node_group = (get_nodes_by_nodetype(graph, nodetype).keys())
+        node_group = (get_nodes_by_nodetype(graph, nodetype, return_dict = True).keys())
         node_groups.update({nodetype: (node_group, base_colors[i])})
         
     if title is None:

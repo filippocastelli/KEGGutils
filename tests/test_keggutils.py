@@ -71,7 +71,7 @@ class KEGGutilsTest(unittest.TestCase):
         
         graph = kgu.kegg_link_graph("hsa", "enzyme")
         
-        self.assertEqual(kgu.get_nodes_by_nodetype(graph, "hsa"), dict.fromkeys(hsa_nodes, "hsa"))
+        self.assertEqual(kgu.get_nodes_by_nodetype(graph, "hsa", return_dict = True), dict.fromkeys(hsa_nodes, "hsa"))
         
     @patch('KEGGutils.KEGGutils.keggapi_link')
     def test_get_nodes_by_nodetype_invalidgraph(self, mock_keggapi_link):
@@ -95,13 +95,13 @@ class KEGGutilsTest(unittest.TestCase):
             
     def test_get_nodes_by_nodetype_correct_nodetype_dict(self):
         hsa_nodetypes = dict.fromkeys(hsa_nodes, "hsa")
-        self.assertEqual(kgu.get_nodes_by_nodetype(testgraph, "hsa"), hsa_nodetypes)
+        self.assertEqual(kgu.get_nodes_by_nodetype(testgraph, "hsa", return_dict = True), hsa_nodetypes)
         
     def test_unique_nodetypes(self):
         self.assertEqual(kgu.get_unique_nodetypes(testgraph), ['enzyme', 'hsa'])
         
     def test_linked_nodes(self):
-        self.assertEqual(kgu.linked_nodes(testgraph, hsa_nodes[0]), {enzyme_nodes[0]: "enzyme"})
+        self.assertEqual(kgu.linked_nodes(testgraph, hsa_nodes[0], return_dict = True), {enzyme_nodes[0]: "enzyme"})
         
     def test_neighbor_graph_nodes(self):
         self.assertEqual(set(kgu.neighbor_graph(testgraph, {hsa_nodes[0]: "hsa"}).nodes), set([hsa_nodes[0], enzyme_nodes[0]]))
