@@ -4,7 +4,7 @@ import logging
 from KEGGutils.KEGGutils import get_nodes_by_nodetype, populate_graph, connected_components,\
 linked_nodes, graph_measures, projected_graph, get_unique_nodetypes, draw, neighbor_graph
 from KEGGutils.KEGGapi import keggapi_link, keggapi_info
-from KEGGutils.KEGGerrors import KEGGDataBaseError, KEGGKeyError, KEGGgraphError
+from KEGGutils.KEGGerrors import KEGGDataBaseError, KEGGKeyError, KEGGgraphError, KEGGChainError
 
 
 #keggapi_info_ = keggapi_info
@@ -160,7 +160,6 @@ class KEGGgraph(nx.Graph):
             self.add_nodes_from(ngraph.nodes(data = True))
             self.add_edges_from(ngraph.edges(data = True))
             self.name = name
-            
             return self
         else:
             return ngraph
@@ -187,6 +186,29 @@ class KEGGgraph(nx.Graph):
             gcopy.remove_nodes_from(isolates)
             
             return gcopy
+    
+    def connected_subgraph(self, nodelist, inplace = False):
+        
+        subgraph_nodes = []
+        
+        for sourcenode in nodelist:
+            connected_nodes = [targetnode for targetnode in self.nodes if nx.has_path(self, sourcenode, targetnode)]
+            subgraph_nodes = subgraph_nodes + connected_nodes
+        
+        subg = nx.subgraph(self, subgraph_nodes)
+        
+        if inplace == False:
+            return subg
+        else: 
+            name = self.name
+            self.clear() #removes nodes, edge, name
+            self.add_nodes_from(subg.nodes(data = True))
+            self.add_edges_from(subg.edges(data = True))
+            self.name = name
+            return self
+            
+            
+            
         
 
 class KEGGlinkgraph(KEGGgraph):
@@ -262,22 +284,27 @@ class KEGGlinkgraph(KEGGgraph):
         
         ngraph =  super(type(self) ,self).neighbor_graph(nodelist, keep_isolated_nodes = keep_isolated_nodes, inplace = False)
         
-        ngraph.source_db = self.source_db
-        ngraph.target_db = self.target_db
-        
-        ngraph.source_nodes = dict.fromkeys(ngraph.list_by_nodetype(self.source_db), self.source_db)
-        ngraph.target_nodes = dict.fromkeys(ngraph.list_by_nodetype(self.target_db), self.target_db)
+        self._copylinkattr(ngraph)
         
         if inplace == True:
-            name = self.name
-            self.clear() #removes nodes, edge, name, shouldnt touch other properties
-            self.add_nodes_from(ngraph.nodes(data = True))
-            self.add_edges_from(ngraph.edges(data = True))
-            self.name = name
+            self._copy_nodes_from_graph(ngraph)
             return self
         else:
             return ngraph
         
+
+    def connected_subgraph(self, nodelist, inplace = False):
+        
+        subgraph =  super(type(self) ,self).connected_subgraph(nodelist, inplace = False)
+        
+        self._copylinkattr(subgraph)
+        
+        
+        if inplace == True:
+            self._copy_nodes_from_graph(subgraph)
+            return self
+        else:
+            return subgraph
         
     def projected_graph(self, nodelist = None, name = None):
         """Projects the link graph on a subset of nodes
@@ -308,13 +335,14 @@ class KEGGlinkgraph(KEGGgraph):
             nodetype = self.nodes[intersection_nodes[0]]['nodetype']
             nodedict = dict.fromkeys(nodelist, nodetype)
         
-
+        
+        if name == None:
+            name = "projection of {} onto {} nodes".format(self.name, self.source_db)
             
         proj_graph = projected_graph(self, nodedict = nodedict,
                                      multigraph = False,
-                                     name = "projection of {} onto {}")
-        if name == None:
-            name = "projection of {} onto {} nodes".format(self.name, self.source_db)
+                                     name = name)
+
             
         
         projected_kegggraph = KEGGgraph()
@@ -331,10 +359,26 @@ class KEGGlinkgraph(KEGGgraph):
         
         return nodes1, nodes2
     
+    def _copy_nodes_from_graph(self, graph):
+        name = self.name
+        self.clear() #removes nodes, edge, name, shouldnt touch other properties
+        self.add_nodes_from(graph.nodes(data = True))
+        self.add_edges_from(graph.edges(data = True))
+        self.name = name
+        
+    def _copylinkattr(self, graph):
+        graph.source_db = self.source_db
+        graph.target_db = self.target_db
+        
+        source_nodes = dict.fromkeys(graph.list_by_nodetype(self.source_db), self.source_db)
+        target_nodes = dict.fromkeys(graph.list_by_nodetype(self.target_db), self.target_db)
+        
+        graph.source_nodes = source_nodes
+        graph.target_nodes = target_nodes
     
     
 
-class KEGGchain(KEGGgraph):
+class KEGGchain(KEGGgraph, nx.DiGraph):
     """ KEGGchain
     Can be used to build chains of KEGGlinkgraphs, builds a composed graph of sequentially linked databases
 
@@ -353,6 +397,9 @@ class KEGGchain(KEGGgraph):
     """
     chain_dbs = []
     chain = []
+    
+    directed_chain = nx.DiGraph()
+    
 
 
     def __init__(self, *args, **kwargs):
@@ -369,6 +416,8 @@ class KEGGchain(KEGGgraph):
             self.add_edges_from(composed_graph.edges(data = True))
             
             self.name = ">".join(self.chain_dbs)+" chain"
+            
+            self._init_directed()
         
         
     def initchain(self):
@@ -383,14 +432,112 @@ class KEGGchain(KEGGgraph):
                     raise KEGGDataBaseError(db = link[1], msg = "KEGG database {} doesn't have a direct link to {}:\nplease compose your chain only using sequentially linkable databases".format(link[0], link[1]))
                 self.chain.append(KEGGlinkgraph(source_db = link[0], target_db = link[1]))                
                 
+    def _init_directed(self):
         
-
-                
+        self.directed_chain = self.to_directed()
+        
+        for graph in self.chain:
+            source_nodes = list(graph.source_nodes.keys())
+            edges_to_remove = list(self.directed_chain.in_edges(source_nodes))
+            self.directed_chain.remove_edges_from(edges_to_remove)
             
+    def directed_propagation(self, nodelist, chain_level = 0, inplace = False, return_directed = False):
 
-    
-    
+        subgraph_nodes = []
+        nlist = nodelist
+        for linkgraph in self.chain[chain_level:]:
             
+            if set(nlist) & set(linkgraph.nodes) == set():
+                raise KEGGChainError(self)
+
+            narrowed_graph = linkgraph.neighbor_graph(nlist)
+            
+            source_nodes = list(narrowed_graph.source_nodes.keys())
+            target_nodes = list(narrowed_graph.target_nodes.keys())
+            
+            subgraph_nodes = subgraph_nodes + source_nodes + target_nodes
+            
+            nlist = target_nodes
+#
+#        for source_node in nodelist:
+#            if source_node in self.directed_chain.nodes:
+#                for target_node in self.directed_chain.nodes:
+#                    if nx.has_path(self.directed_chain, source_node, target_node):
+#                        subgraph_nodes.append(target_node)
+
+        subg = nx.subgraph(self, subgraph_nodes)
+        subg.chain = self.chain
+        subg.chain_dbs = self.chain_dbs
+        
+        subg_directed = nx.subgraph(self.directed_chain, subgraph_nodes)
+        
+        if inplace == False:
+            if return_directed:
+                return subg_directed
+            else:
+                return subg
+        else: 
+            name = self.name
+            self.clear() #removes nodes, edge, name
+            self.add_nodes_from(subg.nodes(data = True))
+            self.add_edges_from(subg.edges(data = True))
+            self.name = name
+            
+            self.directed_chain.clear()
+            self.directed_chain.add_nodes_from(subg_directed.nodes(data = True))
+            self.directed_chain.add_edges_from(subg_directed.edges(data = True))
+            self.directed_chain = subg_directed
+            
+            if return_directed:
+                return self.directed_chain
+            else:
+                return self
+    
+    def projected_graph(self, chain_level):
+        
+        # 1 search chain element
+        if not chain_level in self.chain_dbs:
+            raise KEGGChainError(self, msg = "Chain level {} is not in chain".format(chain_level))
+        
+        chain_index = self.chain_dbs.index(chain_level)
+        
+        if chain_index == len(self.chain_dbs) +1 :
+            raise KEGGChainError(self, msg = "Chain level {} is the last chain element, cannot project on a successive level".format(chain_level))
+        
+        chain_element = self.chain[chain_index]
+        
+        #2 select elements in chain and form subgraph
+        
+        source_db = chain_element.source_db
+        target_db = chain_element.target_db
+        
+        source_nodes = [node for node in self.nodes if self.nodes[node]['nodetype'] == source_db]
+        target_nodes = [node for node in self.nodes if self.nodes[node]['nodetype'] == target_db]
+        
+        subnodes = source_nodes + target_nodes
+        
+        subgraph = nx.subgraph(self, subnodes)
+        
+        assert nx.is_bipartite(subgraph), "Graph is not bipartite, probably errors in graph construction"
+        
+        graph = KEGGlinkgraph()
+        
+        graph.name = self.name
+        
+        graph.source_db = source_db
+        graph.target_db = target_db
+        
+        graph.add_nodes_from(subgraph.nodes(data = True))
+        graph.add_edges_from(subgraph.edges(data = True))
+        
+        graph.source_nodes = dict.fromkeys(graph.list_by_nodetype(source_db), source_db)
+        graph.target_nodes = dict.fromkeys(graph.list_by_nodetype(target_db), target_db)
+
+
+        return graph.projected_graph()
+        
+        
+        
         
     
         

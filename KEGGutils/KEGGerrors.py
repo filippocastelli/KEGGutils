@@ -111,3 +111,11 @@ class KEGGgraphError(Exception):
             
         super(KEGGgraphError, self).__init__(msg)
         
+    
+class KEGGChainError(Exception):
+    def __init__(self, chain, msg=None):
+        self.chain = chain
+
+        if msg is None:
+            msg = "Invalid KEGG chain: {}".format(self.chain)
+        super(KEGGChainError, self).__init__(msg)
