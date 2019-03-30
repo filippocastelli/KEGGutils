@@ -294,6 +294,21 @@ class KEGGlinkgraph(KEGGgraph):
         
 
     def connected_subgraph(self, nodelist, inplace = False):
+        """Connected subgraph
+        
+        Parameters
+        ----------
+        nodelist : list
+            list of nodes
+        inplace : bool, optional
+            if True the changes are propagated to the original graph (the default is False])
+        
+        Returns
+        -------
+        subgraph
+            subgraph of connected components linked to nodelist 
+        """
+
         
         subgraph =  super(type(self) ,self).connected_subgraph(nodelist, inplace = False)
         
@@ -382,7 +397,6 @@ class KEGGchain(KEGGgraph, nx.DiGraph):
     """ KEGGchain
     Can be used to build chains of KEGGlinkgraphs, builds a composed graph of sequentially linked databases
 
-    Init Arguments
     --------------
     chain : list
         list of databases, they have to be sequentially linked in KEGG
@@ -394,6 +408,9 @@ class KEGGchain(KEGGgraph, nx.DiGraph):
         list of databases
     chain : list
         list of chained KEGGlinkgraphs
+    directed_chain : diGraph
+        directed version of the chain
+        
     """
     chain_dbs = []
     chain = []
@@ -442,9 +459,35 @@ class KEGGchain(KEGGgraph, nx.DiGraph):
             self.directed_chain.remove_edges_from(edges_to_remove)
             
     def directed_propagation(self, nodelist, chain_level = 0, inplace = False, return_directed = False):
+        """Directed propagation
+        Computes the subchain of nodes that are sequentially linked to nodelist
+        
+        Parameters
+        ----------
+        nodelist : list
+            list of nodes you wish to propagate from
+        chain_level : int, optional
+            If the nodes are not in the first level of the chain you need to specify which level they're in
+        inplace : bool, optional
+            if True propagates the changes to the original KEGGchain (the default is False])
+        return_directed : bool, optional
+            if True returns the directed chain instead of the original chain (the default is False)
+        """
+
 
         subgraph_nodes = []
         nlist = nodelist
+        
+        if self.chain[:chain_level] == []:
+            pass
+        else:
+            for linkgraph in self.chain[:chain_level]:
+                source_nodes = list(linkgraph.source_nodes.keys())
+                target_nodes = list(linkgraph.target_nodes.keys())
+                
+                subgraph_nodes = subgraph_nodes + source_nodes
+                
+
         for linkgraph in self.chain[chain_level:]:
             
             if set(nlist) & set(linkgraph.nodes) == set():
@@ -493,7 +536,24 @@ class KEGGchain(KEGGgraph, nx.DiGraph):
             else:
                 return self
     
-    def projected_graph(self, chain_level):
+    def projected_graph(self, chain_level = None):
+        """Projected Graph
+        Calculates the projection of a given chain level onto the next 
+        
+        Parameters
+        ----------
+        chain_level : str
+            name of the interested chain level, if None projection of the second to last level is made onto the last (default is None)
+
+        Returns
+        -------
+        KEGGgraph
+            projected graph
+        """
+        
+        if chain_level == None:
+            chain_level = self.chain_dbs[-2]
+
         
         # 1 search chain element
         if not chain_level in self.chain_dbs:
