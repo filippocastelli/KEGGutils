@@ -14,7 +14,8 @@ from .KEGGapi import (
         DOWNLOAD_DIR,
         CURRENT_DIR,
         get_download_dir,
-        change_download_dir)
+        change_download_dir,
+        get_references)
 
 from .KEGGutils import (
         kegg_link_graph,

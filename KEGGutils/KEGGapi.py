@@ -262,7 +262,7 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
                         pass
                     else:
                         key = keytxt.lower()
-                        if key != lastkey:
+                        if key != lastkey or flag != "k":
                             parsed_dict.update({lastkey: subdict})
                             subdict = {}
                         if key in keys:
@@ -276,7 +276,11 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
             if keytxt != "///":
                 content = content_str.lstrip().rstrip()
                 if flag == "k":
-                    subdict.update({"descr" : content})
+                    if "reference" in key:
+                        subk = "reference_hook"
+                    else:
+                        subk = "descr"
+                    subdict.update({subk : content})
                 elif flag == "s":
                     subdict.update({subkey : content})
                 
@@ -481,7 +485,7 @@ def download_xml(url, filename, force_download=False, verbose=True):
 # =============================================================================
 
 
-def keggapi_list(database, option=None, want_descriptions=False, force_download=False):
+def keggapi_list(database, option=None, want_descriptions=False, force_download=False, return_url = False):
     """Interface for the KEGG API LIST command
 
     See https://www.kegg.jp/kegg/rest/keggapi.html for usage
@@ -496,6 +500,8 @@ def keggapi_list(database, option=None, want_descriptions=False, force_download=
         If True returns descriptions for each item (the default is False)
     force_download : bool, optional
         If true replaces any pre-existing downloaded file (the default is False)
+    return_url : bool, optional
+        If True returns the interrogated URL
     
     Returns
     -------
@@ -523,6 +529,8 @@ def keggapi_list(database, option=None, want_descriptions=False, force_download=
     option, optionurl = push_backslash(option)
 
     url = "http://rest.kegg.jp/list/{}{}".format(database, optionurl)
+    if return_url == True:
+        return url
     filename = database + "_" + option + "_list"
 
     list_fulltext = download_textfile(url, filename, force_download=force_download)
@@ -547,6 +555,7 @@ def keggapi_find(
     want_descriptions=False,
     verbose=False,
     force_download=False,
+    return_url = False,
 ):
     """Interface for the KEGG API FIND command
     
@@ -566,7 +575,8 @@ def keggapi_find(
         if set to True displays additional messages (the default is False)
     force_download : bool, optional
         if set to True replaces any previously downloaded file under the same name (the default is False)
-    
+    return_url : bool, optional
+        If True returns the interrogated URL
     Returns
     -------
     list, list
@@ -592,7 +602,10 @@ def keggapi_find(
     option, optionurl = push_backslash(option)
 
     url = "http://rest.kegg.jp/find/{}{}{}".format(database, queryurl, optionurl)
-
+    
+    if return_url == True:
+        return url
+    
     filename = database + "_" + query + "_" + option
     fulltext = download_textfile(
         url, filename, verbose=verbose, force_download=force_download
@@ -620,6 +633,7 @@ def keggapi_get(
     show_result_image=True,
     return_dict = False,
     return_text = False,
+    return_url = False,
 ):
     """Interface for the KEGG API GET command
 
@@ -641,7 +655,9 @@ def keggapi_get(
         if set to True shows the downloaded image (the default is True)
     return_dic : bool, optional
         if set to True, returns description in dict format
-    """
+    return_url : bool, optional
+        If True returns the interrogated URL
+        """
 
     options = ["aaseq", "ntseq", "mol", "kcf", "image", "conf", "kgml", "json"]
 
@@ -651,7 +667,9 @@ def keggapi_get(
     option, optionurl = push_backslash(option)
 
     url = "http://rest.kegg.jp/get/{}{}".format(dbentry, optionurl)
-
+    if return_url == True:
+        return url
+    
     if option == "":
         option = "description"
 
@@ -707,7 +725,7 @@ def keggapi_get(
         raise KEGGKeyError(key=dbentry, msg="KEGG GET API request not recognized")
 
 
-def keggapi_link(source, target, verbose=True, force_download=False):
+def keggapi_link(source, target, verbose=True, force_download=False, return_url = False):
     """Interface for the KEGG REST API LINK command 
     Given two different database names returns the linked relations between them
     
@@ -723,7 +741,9 @@ def keggapi_link(source, target, verbose=True, force_download=False):
         displays additional infos during the download (the default is True)
     force_download : bool, optional
         forces overwriting over cached files (the default is False)
-    
+    return_url : bool, optional
+        If True returns the interrogated URL
+        
     Raises
     ------
     KEGGKeyError
@@ -743,7 +763,10 @@ def keggapi_link(source, target, verbose=True, force_download=False):
         )
 
     url = "http://rest.kegg.jp/link/{}/{}".format(target, source)
-
+    if return_url == True:
+        return url
+    
+    
     filename = target + "_" + source + "_link"
 
     text = download_textfile(url, filename, force_download=force_download, verbose = verbose)
@@ -753,7 +776,7 @@ def keggapi_link(source, target, verbose=True, force_download=False):
     return link1, link2
 
 
-def keggapi_conv(source, target, verbose=True, force_download=False):
+def keggapi_conv(source, target, verbose=True, force_download=False, return_url = False):
     """ KEGG REST API interface to CONV command
     Converts KEGG codes to and from NCBI ProteinID, NCBI GeneID, Uniprot, CHEBI\
     and PubChem name standards
@@ -771,7 +794,8 @@ def keggapi_conv(source, target, verbose=True, force_download=False):
         if set to True displays additional messages (defaultis True)
     force_download bool: 
         forces overwriting cached files (default is False)
-        
+    return_url : bool, optional
+        If True returns the interrogated URL        
     Returns
     -------
     
@@ -813,7 +837,9 @@ def keggapi_conv(source, target, verbose=True, force_download=False):
             raise KEGGKeyError(key=kegg_db)
 
     url = "http://rest.kegg.jp/conv/{}/{}".format(target, source)
-
+    
+    if return_url == True:
+        return url
     filename = target + "_" + source + "_conv"
 
     text = download_textfile(url, filename, force_download=force_download, verbose = verbose)
@@ -823,7 +849,7 @@ def keggapi_conv(source, target, verbose=True, force_download=False):
     return codes1, codes2
 
 
-def keggapi_info(database, verbose=True, force_download=False, return_format = None):
+def keggapi_info(database, verbose=True, force_download=False, return_format = None, return_url = False):
     """KEGG REST API interface for INFO command
     Displays information on a given database
     
@@ -861,7 +887,10 @@ def keggapi_info(database, verbose=True, force_download=False, return_format = N
         )
 
     url = "http://rest.kegg.jp/info/{}".format(database)
-
+    
+    if return_url == True:
+        return url
+    
     filename = database + "_info"
 
     infos = download_textfile(url, filename, verbose=False, force_download = force_download)
@@ -881,7 +910,7 @@ def keggapi_info(database, verbose=True, force_download=False, return_format = N
         
 
 
-def keggapi_ddi(dbentry, force_download=False):
+def keggapi_ddi(dbentry, force_download=False, return_url = False):
     """KEGG REST API interface for the DDI command
     lists drug-drug interactions for a given compound name
     
@@ -892,11 +921,17 @@ def keggapi_ddi(dbentry, force_download=False):
         drug KEGG database entry
     force_download : bools
         forces overwriting over cached files (default is False)
-        
+    return_url : bool, optional
+        If True returns the interrogated URL        
     for further info read https://www.kegg.jp/kegg/rest/keggapi.html"""
 
     url = "http://rest.kegg.jp/ddi/{}".format(dbentry)
-
+    
+    if return_url == True:
+        return url
+    
+    
+    
     filename = dbentry + "_ddi"
 
     text = download_textfile(url, filename, verbose=False, force_download = force_download)
@@ -999,3 +1034,13 @@ def get_infos(item, verbose=False):
 
     print("Infos on {} from KEGG:\n".format(item))
     print(infos)
+
+def get_references(item):
+    """ Get References
+    For a given item tries to find """
+    
+    get_dict = keggapi_get(dbentry = item, return_dict = True)
+    
+    dict_keys = [key for key in get_dict.keys() if "reference" in key]
+    
+    return [get_dict[key] for key in dict_keys]
