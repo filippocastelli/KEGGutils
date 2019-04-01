@@ -501,12 +501,6 @@ class KEGGchain(KEGGgraph, nx.DiGraph):
             subgraph_nodes = subgraph_nodes + source_nodes + target_nodes
             
             nlist = target_nodes
-#
-#        for source_node in nodelist:
-#            if source_node in self.directed_chain.nodes:
-#                for target_node in self.directed_chain.nodes:
-#                    if nx.has_path(self.directed_chain, source_node, target_node):
-#                        subgraph_nodes.append(target_node)
 
         subg = nx.subgraph(self, subgraph_nodes)
         subg.chain = self.chain

@@ -171,7 +171,7 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
     fulltext : str
         raw text
     mode : str
-        parsing mode, valid ones are bipartite_list ! columns
+        parsing mode, valid ones are bipartite_list ! columns ! nested
     want_desc : bool
         valid only for "bipartite" mode, if False returns only first of the two lists
 
@@ -183,7 +183,7 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
         dictionary from parsed text, only for columns mode
         """
         
-    validmodes = ["bipartite_list", "columns"]
+    validmodes = ["bipartite_list", "columns", "nested"]
     
     if mode not in validmodes:
         raise ValueError
@@ -227,7 +227,62 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
                 parsed_dict[current_key].append(item)
             else:
                 raise NotImplementedError
+                
+        return parsed_dict
+    
+    
+    if mode == "nested":
         
+        lines = fulltext.splitlines()
+        
+        lastkey = None
+        key_id = 0
+        keys = []
+        subdict = {}
+        parsed_dict = {}
+        for line in lines:
+            
+            entry_str = line[:12]
+            content_str = line[12:]
+            
+            
+            split_line = line.split("  ")
+            
+            split_line = [entry.lstrip() for entry in split_line if entry != ""]
+            
+            if entry_str.lstrip().rstrip() != "":
+                entry_str_split = entry_str.split("  ")
+                if entry_str_split[0] == "":
+                    subkey = entry_str_split[1].lstrip().rstrip().lower()
+#                    print("entering subkey {}".format(subkey))
+                    flag = "s"
+                else:
+                    keytxt = entry_str_split[0].lstrip().rstrip()
+                    if keytxt == "///":
+                        pass
+                    else:
+                        key = keytxt.lower()
+                        if key != lastkey:
+                            parsed_dict.update({lastkey: subdict})
+                            subdict = {}
+                        if key in keys:
+                            key = key + str(key_id)
+                            key_id = key_id +1
+#                        print("entering key {}".format(key))
+                        keys.append(key)
+                        flag = "k"
+                        subkey = None
+            
+            if keytxt != "///":
+                content = content_str.lstrip().rstrip()
+                if flag == "k":
+                    subdict.update({"descr" : content})
+                elif flag == "s":
+                    subdict.update({subkey : content})
+                
+                lastkey = key
+        
+        parsed_dict.pop(None)
         return parsed_dict
                 
 def download_textfile(url, filename, force_download=False, verbose=True):
@@ -563,6 +618,8 @@ def keggapi_get(
     verbose=False,
     force_download=False,
     show_result_image=True,
+    return_dict = False,
+    return_text = False,
 ):
     """Interface for the KEGG API GET command
 
@@ -582,6 +639,8 @@ def keggapi_get(
         if set to True replaces any file under the same filename (the default is False)
     show_result_image: boo, optional
         if set to True shows the downloaded image (the default is True)
+    return_dic : bool, optional
+        if set to True, returns description in dict format
     """
 
     options = ["aaseq", "ntseq", "mol", "kcf", "image", "conf", "kgml", "json"]
@@ -599,13 +658,20 @@ def keggapi_get(
     filename = dbentry + "_" + option
 
     if option == "description":
+        
         infos = download_textfile(
             url, filename, verbose=False, force_download=force_download
         )
+        if return_dict == True:
+            parsed_dict = process_request_text(infos, mode = "nested")
+            return parsed_dict
+        elif return_text == True:
+            return infos
         if verbose == False:
             infos = "\n".join(infos.splitlines()[1:4])
         print("Infos on {} from KEGG:\n".format(dbentry))
         print(infos)
+
     elif option == "kgml":
         tree = download_xml(
             url, filename, force_download=force_download, verbose=verbose
