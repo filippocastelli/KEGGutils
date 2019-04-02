@@ -4,7 +4,7 @@ Working with **KEGG** in **Python** and **NetworkX**
 
 
 
-**KEGGutils** is a toolkit designed for working with the *Kyoto Encyclopedia of Genes and Genome* database in *Python* with a quick and easy to use interface: and in a single line you can download data from KEGG's REST API, organize in a graph-like format provided by *NetworkX* and immediately start exploring.
+**KEGGutils** is a toolkit designed for working with the *Kyoto Encyclopedia of Genes and Genome* database in *Python* with a quick and easy to use interface: in a single line you can download data from KEGG's REST API, organize in a graph-like format provided by *NetworkX* and immediately start exploring.
 
 *KEGGutils* is much more than just an API interface: other than a series of tools to better interface yourself with the service, it provides expanded *NetworkX* classes and methods ( totally nx-compatible ) to handle different types of data and help you better exploit underlying structures. 
 KEGGutils is easily expandable and can be immediately integrated anywhere you use *NetworkX* to process data.
