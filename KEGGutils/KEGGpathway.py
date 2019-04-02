@@ -4,10 +4,11 @@ import logging
 import matplotlib.pylab as plt
 
 from KEGGutils import draw
-from KEGGutils.KEGGapi import keggapi_get
-from KEGGutils.KEGGerrors import KGMLerror
+from KEGGutils.KEGGapi import keggapi_get, get_references
+from KEGGutils.KEGGerrors import KGMLerror, KEGGOnlineError
 from KEGGutils.KEGGgraphs import KEGGgraph
- 
+
+    
 
 class KEGGpathway(KEGGgraph):
     """KEGG Pathway:
@@ -59,7 +60,8 @@ class KEGGpathway(KEGGgraph):
         dictionary of unclassified nodes in the pathway, ordered by corresponding graph node
     relations: dict
         dictionary of relations in the pathway, ordered by corresponding graph edge
-
+    weblink : str
+        link to KEGG pathway page
     elements: dict
         dictionary of the previous dictionaries ordered by nodetype
     element_keys: list
@@ -78,7 +80,8 @@ class KEGGpathway(KEGGgraph):
         Downloads the pathway visualization from KEGG and returns it
     KEGGpathway.list_by_nodetype(nodetype):
         Returns a list of corresponding nodetypes in the pathway.
-    
+    KEGGpathway.get_references():
+        Returns a list of academic references to given pathway
     """
 
     title = ""
@@ -131,12 +134,24 @@ class KEGGpathway(KEGGgraph):
         if (self.kgml_file is not None) or (self.name is not None) or (self.tree is not None):
             if self.name is not None:
                 logging.debug("Downloading {} XML tree from KEGG".format(self.name))
-                self.tree = keggapi_get(dbentry = self.name, option = "kgml")
+                try:
+                    self.tree = keggapi_get(dbentry = self.name, option = "kgml")
+                except KEGGOnlineError as kerr:
+                    raise KEGGOnlineError(kerr.request, msg = "Pathway {} doesn't seem to have a KGML associated file \n( pathways with map prefix generally don't have KGML files )".format(self.name))
             self.parse_kgml(self.kgml_file, self.tree)
 
     # =============================================================================
     # PUBLIC METHODS
     # =============================================================================
+    def get_references(self):
+        """ Returns academic references, see KEGGutils.get_references"""
+        if "path:" in self.name:
+            ref_id = self.name.replace("path:","")
+        else:
+            ref_id = self.name
+
+        return get_references(ref_id)
+
     def calc_pos(self):
         """Infers the position layout of the nodes
         Returns
@@ -180,6 +195,8 @@ class KEGGpathway(KEGGgraph):
         self.title = tree.getroot().get("title")
         self.name = tree.getroot().get("name")
         self.idcode = tree.getroot().get("id")
+        self.weblink = tree.getroot().get("link")
+        self.imagelink = tree.getroot().get("image")
 
         for entry in tree.getiterator("entry"):
             self._parse_entry(entry)
@@ -195,7 +212,7 @@ class KEGGpathway(KEGGgraph):
         """
         draw(graph=self, title=self.title, pos=self.pos, label_shift = (-15,4))
 
-    def download_img(self):
+    def download_img(self, return_url = False):
         """downloads the KEGG picture of the pathway
         Returns
         -------
@@ -209,7 +226,10 @@ class KEGGpathway(KEGGgraph):
         plt.figure()
         plt.title(self.title)
         plt.imshow(self.kegg_image)
-
+        
+        if return_url == True:
+            return self.imagelink
+        
     def list_by_nodetype(self, nodetype):
         """Gets a list of nodetypes in the graph
         
@@ -282,11 +302,18 @@ class KEGGpathway(KEGGgraph):
             y coordinate
         
         """
-
-        x = int(graphics.get("x"))
-        y = -int(graphics.get("y"))
         name = graphics.get("name")
-
+        
+        if graphics.get("type") == "line":
+#            x1,x2,y1,y2 = graphics.get("coords").split(",")
+#            
+#            return name, [x1, x2, y1, y2]
+            x = 999
+            y = 999
+        else:
+            x = int(graphics.get("x"))
+            y = -int(graphics.get("y"))
+            
         return name, x, y
 
     def _parse_substrate_product(self, substrate):
@@ -339,20 +366,24 @@ class KEGGpathway(KEGGgraph):
 
         node_title = g_name if g_name is not None else node_name
         self.labels[node_id] = node_title
-
-        xy = (g_x, g_y) if ((g_x is not None) and (g_y is not None)) else None
-
+        
+        if ((g_x is not None) and (g_y is not None)):
+            xy = (g_x, g_y)
+        else:
+            xy = None
+        
         nodes_to_add = node_name.split()
         for i, node in enumerate(nodes_to_add):
             node_index = node_id
             if i > 1:
                 node_index = node_id + "_" + str(i - 1)
-
-            xy = (
-                (g_x - 10 * i, 10 * i + g_y)
-                if ((g_x is not None) and (g_y is not None))
-                else None
-            )
+                
+            if ((g_x is not None) and (g_y is not None)):
+                xy = (g_x - 10 * i, 10 * i + g_y)
+            else:
+                xy = None
+                
+                
             self.add_node(
                 node_index,
                 name=node,
@@ -421,7 +452,7 @@ class KEGGpathway(KEGGgraph):
         relation : xml element
             see KEGG KGML documentation
         
-        """
+         """
         relation_type = relation.get("type")
         relation_entry1 = relation.get("entry1")
         relation_entry2 = relation.get("entry2")
@@ -451,6 +482,7 @@ class KEGGpathway(KEGGgraph):
 
                 self.relations[e1 + "to" + e2] = {
                     "nodes": (self.node[e1]["name"], self.node[e2]["name"]),
+                    "node_ids": (e1, e2),
                     "relation_type": relation_type,
                     "subtypes": subtypes,
                 }

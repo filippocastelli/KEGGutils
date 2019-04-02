@@ -1037,7 +1037,18 @@ def get_infos(item, verbose=False):
 
 def get_references(item):
     """ Get References
-    For a given item tries to find """
+    For a given item tries to find academic references
+    
+    Parameters:
+    -----------
+    input : str
+        requested object identifier
+    
+    Returns:
+    -------
+    referencelist : list
+        list of references
+    """
     
     get_dict = keggapi_get(dbentry = item, return_dict = True)
     
