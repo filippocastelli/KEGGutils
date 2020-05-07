@@ -29,4 +29,4 @@ jobs:
           command: |
             . venv/bin/activate
             cd tutorials
-            for f in *.ipynb; do jupyter-nbconvert --to notebook --execute "$f"; done
+            for f in *.ipynb; do jupyter-nbconvert --to script --execute "$f"; done
