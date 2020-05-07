@@ -37,6 +37,12 @@ To make sure KEGGutils works as it should, a few dependencies must be satisfied:
 
 note: if you use pip to install KEGGutils, it should automatically get the needed dependencies for you!
 
+note: you can create an environment with all the required dependencies using the incldued anaconda environment configurator, you just need to run
+
+`conda env create -f keggutils_env.yml` 
+
+to create a `keggutils_env` anaconda environment with all the required dependencies.
+
 ## Getting started
 
 In this repo can find four dense yet easy to follow tutorials covering most of *KEGGutils*'s functionalities and more are coming in the next future.
@@ -58,4 +64,17 @@ Here are a few useful links
 - [KEGG REST API reference page](https://www.kegg.jp/kegg/rest/keggapi.html)
 - [KEGG KGML (KEGG Markup Language) reference page](https://www.kegg.jp/kegg/xml/)
 - [Networkx Github IO](https://networkx.github.io/)
+
+
+
+## Contacts
+
+**Author:**
+
+Filippo Maria Castelli  
+castelli@lens.unifi.it  
+LENS, European Laboratory for Non-linear Spectroscopy  
+Via Nello Carrara 1  
+50019 Sesto Fiorentino (FI), Italy
+
 

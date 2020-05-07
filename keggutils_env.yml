@@ -1,0 +1,15 @@
+name: keggutils_env
+channels:
+  - conda-forge
+  - anaconda
+dependencies:
+  - python=3.7
+  - networkx
+  - matplotlib
+  - awesome-slugify
+  - requests
+  - pillow
+  - scipy
+  - pytest
+  - pytest-cov
+  - jupyter
