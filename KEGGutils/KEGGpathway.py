@@ -161,7 +161,7 @@ class KEGGpathway(KEGGgraph):
         """
 
         for n in self.nodes():
-            self.pos.update({n: self.node[n]["xy"]})
+            self.pos.update({n: self.nodes[n]["xy"]})
 
         return self.pos
 
@@ -481,7 +481,7 @@ class KEGGpathway(KEGGgraph):
                 self.add_edge(e1, e2, relation_type=relation_type, subtypes=subtypes)
 
                 self.relations[e1 + "to" + e2] = {
-                    "nodes": (self.node[e1]["name"], self.node[e2]["name"]),
+                    "nodes": (self.nodes[e1]["name"], self.nodes[e2]["name"]),
                     "node_ids": (e1, e2),
                     "relation_type": relation_type,
                     "subtypes": subtypes,
