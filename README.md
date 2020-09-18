@@ -55,7 +55,7 @@ To start just follow the links below:
 
 ## Contributing
 
-The project is open to contributions and suggestions: the easiest way is just opening an issue on the repo, if that's too much work just drop me a mail at filippocastelli42@gmail.com
+The project is open to contributions and suggestions, just open an issue on the repo or contact me directly (contacts below).
 
 ## External links
 
