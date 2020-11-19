@@ -34,4 +34,4 @@ from .KEGGpathway import KEGGpathway
 from .KEGGgraphs import (KEGGgraph,
                         KEGGlinkgraph,
                         KEGGchain)
-__version__ = "0.3.3"
+__version__ = "0.3.4"
