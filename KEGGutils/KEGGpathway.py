@@ -124,12 +124,12 @@ class KEGGpathway(KEGGgraph):
             self.kgml_file = kwargs.pop("kgml_file")
         if "tree" in kwargs:
             self.tree = kwargs.pop("tree")
-        if "pathway_id" in kwargs:
-            path_id = kwargs.pop("pathway_id")
+        path_id = kwargs.pop("pathway_id") if "pathway_id" in kwargs else None
 
         super().__init__(*args, **kwargs)
         
-        self.name = path_id
+        if path_id is not None:
+            self.name = path_id
 
         if (self.kgml_file is not None) or (self.name is not None) or (self.tree is not None):
             if self.name is not None:
