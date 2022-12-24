@@ -5,8 +5,6 @@ jobs:
     docker:
       - image: cimg/python:3.9.16
 
-    parallelism: 4
-
     working_directory: ~/KEGGutils
 
     steps:
