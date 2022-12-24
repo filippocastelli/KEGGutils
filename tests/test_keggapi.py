@@ -50,7 +50,7 @@ class KEGGapiTest(unittest.TestCase):
     @patch('KEGGutils.KEGGapi.get_organism_codes', return_value = ['hsa'])
     @patch('requests.get', side_effect = mocked_requests_get,)
     def test_keggapi_list_wantdescrTrue(self, mocked_orgcodes, mockrequestget):
-        itemlist, descriptionlist = kgapi.keggapi_list("hsa", want_descriptions = True)
+        itemlist, descriptionlist, _, _ = kgapi.keggapi_list("hsa", want_descriptions = True)
         test_genes = set(["testgene1", "testgene2"])
         test_descriptions = set(["testdescription1", "testdescription2"])
         
@@ -59,7 +59,7 @@ class KEGGapiTest(unittest.TestCase):
         
     @patch('requests.get', side_effect = mocked_requests_get)
     def test_download_textfile_file_doesnt_exist(self, mockedget):
-        text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2"
+        text = "testgene1\ttesttranscripttype1\ttesttranscriptpos1\ttestdescription1\ntestgene2\ttesttranscripttype2\ttesttranscriptpos2\ttestdescription2"
         self.assertEqual(kgapi.download_textfile("http://rest.kegg.jp/list/hsa", "textfile_testing", force_download = True), text)
         
     @patch('requests.get', side_effect = mocked_requests_get)

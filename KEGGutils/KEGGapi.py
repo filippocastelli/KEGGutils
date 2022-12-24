@@ -183,11 +183,32 @@ def process_request_text(fulltext, want_descr=False, mode = "bipartite_list"):
         dictionary from parsed text, only for columns mode
         """
         
-    validmodes = ["bipartite_list", "columns", "nested"]
+    validmodes = ["bipartite_list", "columns", "nested", "four_way_list"]
     
     if mode not in validmodes:
         raise ValueError
+    
+    # temporary fix for Oct22 API change involving /list/<org> requests
+    # will be removed in KEGGutils 1.x release
+    
+    if mode == "four_way_list":
+        itemlist = []
+        descriptionlist = []
+        transcripttypelist = []
+        transcriptpositionlist = []
         
+        for line in fulltext.splitlines():
+            entry, transcript_type, transcript_position, description = line.strip().split("\t")
+            itemlist.append(entry)
+            descriptionlist.append(description)
+            transcripttypelist.append(transcript_type)
+            transcriptpositionlist.append(transcript_position)
+        
+        if want_descr == True:
+            return itemlist, descriptionlist, transcripttypelist, transcriptpositionlist
+        else:
+            return itemlist
+            
     if mode == "bipartite_list":
         itemlist = []
         descriptionlist = []
@@ -525,7 +546,7 @@ def keggapi_list(database, option=None, want_descriptions=False, force_download=
                 option
             ),
         )
-
+    
     option, optionurl = push_backslash(option)
 
     url = "http://rest.kegg.jp/list/{}{}".format(database, optionurl)
@@ -535,17 +556,27 @@ def keggapi_list(database, option=None, want_descriptions=False, force_download=
 
     list_fulltext = download_textfile(url, filename, force_download=force_download)
 
-    if want_descriptions == False:
-        itemlist = process_request_text(list_fulltext, want_descr=want_descriptions)
-        return itemlist
+    if database in org_codes:
+        # since October 2022 /list/<org> includes chromosomal positions
+        # reponses are now in the form of <org>:<gene> <transcript_type> <position> <description>
+        # this is not compatible with the current implementation of process_request_text
+        itemlist, descriptionlist, transcripttypelist, transcriptpositionlist = process_request_text(list_fulltext, want_descr=True, mode="four_way_list")
+        if want_descriptions:
+            return itemlist, descriptionlist, transcripttypelist, transcriptpositionlist
+        else:
+            return itemlist
+    else:
+        if want_descriptions == False:
+            itemlist = process_request_text(list_fulltext, want_descr=want_descriptions)
+            return itemlist
 
-    elif want_descriptions == True:
-        itemlist, descriptionlist = process_request_text(
-            list_fulltext, want_descr=want_descriptions
-        )
-        assert len(itemlist) == len(descriptionlist), "different length, funny innit"
+        elif want_descriptions == True:
+            itemlist, descriptionlist = process_request_text(
+                list_fulltext, want_descr=want_descriptions
+            )
+            assert len(itemlist) == len(descriptionlist), "different length, funny innit"
 
-        return itemlist, descriptionlist
+            return itemlist, descriptionlist
 
 
 def keggapi_find(
