@@ -13,7 +13,7 @@ KEGGutils is easily expandable and can be immediately integrated anywhere you us
 
 *master branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils.svg?style=shield)](https://circleci.com/gh/filippocastelli/KEGGutils)
 
-*devel branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils/tree/devel.svg?style=shield)](https://circleci.com/gh/filippocastelli/KEGGutils/tree/dev)
+*devel branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils/tree/devel.svg?style=shield)](https://circleci.com/gh/filippocastelli/KEGGutils/tree/devel)
 
 ## Installing KEGGutils
 # <a href="https://pypi.org/"><img alt = PyPi src="https://pypi.org/static/images/logo-large.72ad8bf1.svg" height="100"></img></a>
