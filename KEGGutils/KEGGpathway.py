@@ -198,11 +198,11 @@ class KEGGpathway(KEGGgraph):
         self.weblink = tree.getroot().get("link")
         self.imagelink = tree.getroot().get("image")
 
-        for entry in tree.getiterator("entry"):
+        for entry in tree.iter("entry"):
             self._parse_entry(entry)
-        for relation in tree.getiterator("relation"):
+        for relation in tree.iter("relation"):
             self._parse_relation(relation)
-        for reaction in tree.getiterator("reaction"):
+        for reaction in tree.iter("reaction"):
             self._parse_reaction(reaction)
 
         _ = self.calc_pos()
@@ -357,7 +357,7 @@ class KEGGpathway(KEGGgraph):
         node_kegglink = entry.get("link")  # implied
         #    node_reaction = entry.get('reaction') #implied
 
-        for child in entry.getchildren():
+        for child in entry:
             if child.tag == "graphics":
                 # this should happen only once
                 g_name, g_x, g_y = self._parse_graphics(child)
@@ -424,7 +424,7 @@ class KEGGpathway(KEGGgraph):
         products = []
         alts = []
 
-        for child in reaction.getchildren():
+        for child in reaction:
             if child.tag == "substrate":
                 substrate_id, substrate_name = self._parse_substrate_product(child)
                 substrates.append((substrate_id, substrate_name))
@@ -458,7 +458,7 @@ class KEGGpathway(KEGGgraph):
         relation_entry2 = relation.get("entry2")
         subtypes = []
 
-        for subtype in relation.getchildren():
+        for subtype in relation:
             subtype_name = subtype.get("name")
 
             if subtype_name in ("compound", "hidden compound"):
