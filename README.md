@@ -11,9 +11,9 @@ KEGGutils is easily expandable and can be immediately integrated anywhere you us
 
 ## Current build status:
 
-*master branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils.svg?style=svg)](https://circleci.com/gh/filippocastelli/KEGGutils)
+*master branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils.svg?style=shield)](https://circleci.com/gh/filippocastelli/KEGGutils)
 
-*dev branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils/tree/dev.svg?style=svg)](https://circleci.com/gh/filippocastelli/KEGGutils/tree/dev)
+*devel branch* : [![CircleCI](https://circleci.com/gh/filippocastelli/KEGGutils/tree/devel.svg?style=shield)](https://circleci.com/gh/filippocastelli/KEGGutils/tree/dev)
 
 ## Installing KEGGutils
 # <a href="https://pypi.org/"><img alt = PyPi src="https://pypi.org/static/images/logo-large.72ad8bf1.svg" height="100"></img></a>
@@ -27,13 +27,17 @@ to install it you just need to run
  and that should be it!
  
 ## Dependencies
+KEGGutils is tested and working against python `3.8`, `3.9`, `3.10` and `3.11`.
+
+`3.6` and `3.7` are untested but should work.
+
 To make sure KEGGutils works as it should, a few dependencies must be satisfied:
-- networkx
-- matplotlib
-- awesome-slugify
-- requests
-- Pillow
-- scipy
+- `networkx`
+- `matplotlib`
+- `awesome-slugify`
+- `requests`
+- `Pillow`
+- `scipy`
 
 note: if you use pip to install KEGGutils, it should automatically get the needed dependencies for you!
 

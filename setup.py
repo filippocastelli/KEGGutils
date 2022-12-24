@@ -21,6 +21,7 @@ project_name = "KEGGutils"
 setup(
     name = project_name,
     version = get_property('__version__', project_name),
+    python_reqyuires = '>3.8',
     author = "Filippo Castelli",
     author_email = "filippocastelli42@gmail.com",
     description = ("Simple utils to work with KEGG data on NetworkX"),

@@ -310,9 +310,9 @@ def draw(graph, title=None, layout=None, filename=None, return_ax=False, pos = N
     
     Parameters:
         :graph (Graph): input graph, has to be generated via kegg_link_graph()
-        :layout (str): layout type, choose from 'bipartite_layout',\
-        'circular_layout','kamada_kawai_layout','random_layout',\ 'shell_layout',\
-        'spring_layout','spectral_layout'
+        :layout (str): layout type, choose from 'bipartite_layout',
+            'circular_layout','kamada_kawai_layout','random_layout', 'shell_layout',
+            'spring_layout','spectral_layout'
         :filename (str): if a filename is selected saves the plot as filename.png
         :title (str): title for the graph
         :return_ax: if True returns ax for plot

@@ -35,9 +35,10 @@ def mocked_requests_get(*args, **kwargs):
         return unpickle_resp("testpng")
     elif args[0] == "http://rest.kegg.jp/get/C00002/image":
         return unpickle_resp("testgif")
+    # after October 2022 KEGG /list/<prg> returns gene-trans_type-trans_position-description
     elif args[0] ==  "http://rest.kegg.jp/list/hsa":
         return MockResponse(url = args[0],
-                            text = "testgene1\ttestdescription1\ntestgene2\ttestdescription2",
+                            text = "testgene1\ttesttranscripttype1\ttesttranscriptpos1\ttestdescription1\ntestgene2\ttesttranscripttype2\ttesttranscriptpos2\ttestdescription2",
                             status_code = 200)
     elif args[0] == "http://rest.kegg.jp/returninvalidtext":
         return MockResponse(url = args[0],

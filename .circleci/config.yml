@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.7
+      - image: cimg/python:3.9.16
 
     working_directory: ~/KEGGutils
 
@@ -18,6 +18,11 @@ jobs:
             . venv/bin/activate
             pip install -r requirements.txt
       # Step 3: run linter and tests
+      - run:
+          name: inplace install KEGGutils
+          command: |
+            . venv/bin/activate
+            pip install -e .
       - run:
           name: run tests
           command: |

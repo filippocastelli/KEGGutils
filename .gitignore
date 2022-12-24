@@ -14,3 +14,5 @@ kegg_downloads
 
 tests/test_files_dir/*
 tests/htmlcov/*
+
+tutorials/*.py
