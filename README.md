@@ -1,4 +1,8 @@
-# KEGGutils:
+# KEGGutils: 
+
+[![DOI](https://zenodo.org/badge/174000695.svg)](https://zenodo.org/badge/latestdoi/174000695)
+
+
 Working with **KEGG** in **Python** and **NetworkX**
 # <img src="/img/logo_cut.png" alt="Drawing" width = "630"></img>
 
@@ -69,7 +73,25 @@ Here are a few useful links
 - [KEGG KGML (KEGG Markup Language) reference page](https://www.kegg.jp/kegg/xml/)
 - [Networkx Github IO](https://networkx.github.io/)
 
+## How to Cite
 
+KEGGutils DOI
+
+[![DOI](https://zenodo.org/badge/174000695.svg)](https://zenodo.org/badge/latestdoi/174000695)
+
+BibTeX-style citation:
+```
+@software{filippo_maria_castelli_2022_7482523,
+  author       = {Filippo Maria Castelli},
+  title        = {KEGGutils},
+  month        = dec,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v0.4.1},
+  doi          = {10.5281/zenodo.7482523},
+  url          = {https://doi.org/10.5281/zenodo.7482523}
+}
+```
 
 ## Contacts
 
